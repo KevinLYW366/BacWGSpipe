@@ -1,0 +1,7 @@
+name: roary
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - roary=3.13.0=pl526h516909a_0

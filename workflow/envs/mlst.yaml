@@ -1,0 +1,8 @@
+name: mlst
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - mlst=2.23.0=hdfd78af_0
+channel_priority: flexible

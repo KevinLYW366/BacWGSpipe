@@ -1,0 +1,9 @@
+name: mgcplotter
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - mgcplotter=1.0.1=pyhdfd78af_0
+  - imagemagick=7.1.0_52=pl5321hc735599_0
+channel_priority: flexible

@@ -1,0 +1,203 @@
+##### Workflow Configuration #####
+
+##############
+# Data input #
+##############
+##### Sample list #####
+# List of samples for analysis
+sample_list: "config/sample_list.txt"
+##### Sample info #####
+# Genus of the strains. Please use "Genus" if you don't have any target species to detect.
+genus: "Escherichia"
+# Species of the strains. Please use "species" if you don't have any target species to detect.
+species: "coli"
+##### Sequencing data source #####
+# Sequencing data source (0: Illumina short reads + Long reads;
+#                         1: Illumina short reads ONLY;
+#                         2: Long reads ONLY;)
+seqdata_source: 0
+# Illumina short reads
+## Directory which stores input Illumina short-read data
+illumina_data_dir: "path-to-your-short-read-data-directory"
+## Illumina short-read fastq file name read id format (0: {sample}_1.fastq.gz; 1: {sample}_R1.fastq.gz)
+illumina_fastq_read_id_format: 0
+## Illumina short-read fastq file name suffix format (0: {sample}_1.fastq.gz; 1: {sample}_1.fq.gz)
+illumina_fastq_suffix_format: 0
+## Illumina short-read data directory format (0: {dir}/{sample}_1.fastq.gz; 1: {dir}/{sample}/{sample}_1.fastq.gz)
+illumina_data_dir_format: 0
+# Long reads (either PacBio or Nanopore)
+## Directory which stores long-read data input
+long_data_dir: "path-to-your-long-read-data-directory"
+## Long-read fastq file name suffix format (0: {sample}.fastq.gz; 1: {sample}.fq.gz)
+long_fastq_suffix_format: 0
+## Long-read data directory format (0: {dir}/{sample}.fastq.gz; 1: {dir}/{sample}/{sample}.fastq.gz)
+long_data_dir_format: 0
+
+############
+# Analysis #
+############
+##### Global #####
+# Threads used by tools for each sample
+threads: 16
+# Script to run blast related work (from https://github.com/fmalmeida/bacannot)
+blast_script: "workflow/scripts/run_blasts.py"
+# Script to split genbank files (from https://github.com/fmalmeida/bacannot)
+splitgenbank_script: "workflow/scripts/splitgenbank.py"
+# Script to merge results for several analysis steps (rgi, digis, icefinder, islandpath, phigaro, plasmidfinder, platon, vfdb)
+merge_results_script: "workflow/scripts/merge_results.py"
+
+##### Step 01. Raw sequencing reads QC and pre-processing #####
+# Fastp
+## Python script to extract statistics from fastp json output
+script_extract_fastp_stats: "workflow/scripts/extract_fastp_stats.py"
+# Species identification (Kraken2 + Bracken)
+## Kraken2 database (Standard: archaea, bacteria, viral, plasmid, human1, UniVec_Core PLUS protozoa & fungi)
+kraken2_db: "/lvdata/lxc/db/kraken2/PlusPF"
+## Threshold (the minimum percentage of reads mapping to reference genome)
+kraken2_threshold: 50
+## Bracken - level to estimate abundance
+bracken_level: "S"
+## Bracken - read length to get all classifications
+bracken_read_len: 150
+## Python script to extract results from Bracken report
+script_extract_bracken: "workflow/scripts/bracken_report_extract.py"
+# Nanopore long reads QC (NanoPlot & NanoStat)
+## Python script to extract info from NanoStat results and merge
+merge_nanostat_script: "workflow/scripts/merge_nanostat_results.py"
+
+##### Step 02. Assembly #####
+# Genome Assembly (Unicycler)
+## Path to the SPAdes 3.15.4 executable since in unicycler 0.5.0 conda env
+##   SPAdes version is 3.15.3 which is not compatible with Python 3.10.0
+spades_path: "resources/SPAdes-3.15.4-Linux/bin/spades.py"
+# Separate chromosome and plasmid
+## Path to viralVerify HMM database
+viralverify_hmm_path: "/lvdata/lyw/database/viralVerify_HMMs/nbc_hmms.hmm"
+## seqkit executable to split a genome assembly fasta file
+seqkit: "resources/seqkit_v2.3.1/seqkit"
+## Python script to rename separated fasta files based on viralVerify results
+script_rename_fasta: "workflow/scripts/rename_separated_fasta.py"
+## Python script to summarize genome assembly statistics
+script_assembly_stats: "workflow/scripts/assembly_stats.py"
+# Assembly QC (Quast)
+## Reference genome
+### Note: Leave it empty if you don't have any target species to detect. These two items relate to some assembly QC features in Quast.
+ref_genome: ""
+ref_genome_gff: ""
+
+##### Step 03. Genome annotation and Genomic component analysis #####
+# Prokka
+## R script to plot gene length distribution
+script_plot_gene_length: "workflow/scripts/plot_gene_length.R"
+# Plasmid
+## PLSDB
+### PLSDB Mash sketches file
+plsdb_mash_sketches: "/lvdata/lyw/database/PLSDB/plsdb.msh"
+### Maximal p-value to report in Mash screen
+plsdb_max_pvalue: 0.99
+### Minimal identity in Mash screen
+plsdb_min_ident: 0.8
+### Python script to extract matched plasmid info from PLSDB meta archive
+plsdb_script_meta: "workflow/scripts/extract_plsdb_meta.py"
+### PLSDB meta archive file
+plsdb_meta_archive: "/lvdata/lyw/database/PLSDB/plsdb.tsv"
+## MOB-suite
+### MOB-suite database
+mob_suite_database: "/lvdata/lyw/database/MOB-suite/database"
+## Plasmidfinder
+### Plasmidfinder database (database installation instruction: https://bitbucket.org/genomicepidemiology/plasmidfinder/src/master/)
+plasmidfinder_db: "/lvdata/lyw/database/plasmidfinder_database"
+### Plasmidfinder parameters
+#### Plasmidfinder minimum coverage (in decimals)
+plasmidfinder_mincov: 0.65
+#### Plasmidfinder minimum hreshold for identity (in decimals)
+plasmidfinder_minid: 0.9
+## Platon
+### Platon database (database installation instruction: https://github.com/oschwengers/platon#installation)
+platon_db: "/lvdata/lyw/database/platon/db"
+# Integrative and conjugative elements (ICEs)
+## ICEfinder
+### Path to ICEfinder resource directory
+icefinder_dir: "/lvdata/lyw/software/ICEfinder_linux"
+# Insertion sequences (IS)
+## digIS
+### digIS script (https://github.com/janka2012/digIS)
+digis_script: "resources/digIS-digISv1.2/digIS_search.py"
+
+##### Step 04. Gene function analysis #####
+# Gene function annotation
+## EggNOG-mapper
+### Path to eggNOG-mapper databases directory
+eggnog_mapper_database: "/lvdata/lyw/database/eggnog-mapper/database"
+## GO database
+### Path to GO database core GO ontology (OBO Format) file
+go_obo: "/lvdata/lyw/database/GO/GO-basic_20190417.obo"
+### Python script to annotate GO terms
+go_annotate_script: "workflow/scripts/annotate_eggnog_results_go.py"
+### R script to plot GO annotation results
+go_plot_script: "workflow/scripts/plot_go_annotation.R"
+## KEGG PATHWAY database
+### Path to KEGG PATHWAY database file
+kegg_db: "/lvdata/lyw/database/KEGG/reference_pathway/KEGG_reference_pathway_database_20221017.txt"
+### R script to annotate and plot KEGG PATHWAY database terms
+kegg_annotate_plot_script: "workflow/scripts/annotate_plot_eggnog_results_kegg.R"
+## COG database
+### Path to COG database files directory
+cog_database_directory: "/lvdata/lyw/database/COG/COG2020"
+### Python script to annotate COG terms
+cog_annotate_script: "workflow/scripts/annotate_eggnog_results_cog.py"
+### R script to plot GO annotation results
+cog_plot_script: "workflow/scripts/plot_cog_annotation.R"
+## NCBI Taxonomy database
+### Path to NCBI Taxonomy database files directory
+taxonomy_database_directory: "/lvdata/lyw/database/NCBI_Taxonomy"
+### Python script to annotate NCBI Taxonomy terms
+taxonomy_annotate_script: "workflow/scripts/annotate_eggnog_results_taxonomy.py"
+### R script to plot NCBI Taxonomy annotation results
+taxonomy_plot_script: "workflow/scripts/plot_taxonomy_annotation.R"
+# Virulence or pathogenicity analysis
+## CARD database: Antimicrobial resistance (AMR) genes
+### Path to CARD database directory
+card_database_directory: "/lvdata/lyw/database/card_database"
+### Python script to reformat Abricate (CARD) results
+script_reformat_abricate_card: "workflow/scripts/reformat_abricate_card_results.py"
+### Python script to merge RGI and Abricate (CARD) results
+script_merge_rgi_abricate_card: "workflow/scripts/merge_abricate_rgi.py"
+### Python script to extract AMR results of all samples into a matrix
+script_extract_card: "workflow/scripts/extract_card_result.py"
+## VFDB database: Virulence factors (VF)
+### VFDB full nucleotide database (makeblastdb -dbtype nucl the FASTA file before running this workflow)
+vfdb_database_directory: "/lvdata/lyw/database/VFDB/VFDB_setA_nt.fas"
+### VFDB blast parameters - minimum coverage
+vfdb_blast_mincov: 80
+### VFDB blast parameters - minimum hreshold for identity
+vfdb_blast_minid: 90
+### Python script to extract VF results of all samples into a matrix
+script_extract_vfdb: "workflow/scripts/extract_vf_result.py"
+# Secretory proteins
+## SignalP: predict secretory signal peptides in protein sequences
+### Shell script to load local conda environment settings
+###  since some manual steps are needed to install this conda environment
+signalp_env_script: "workflow/scripts/signalp_path.sh"
+## TMHMM: predict transmembrane helices
+### Shell script to load local conda environment settings
+###  since some manual steps are needed to install this conda environment
+tmhmm_env_script: "workflow/scripts/tmhmm_path.sh"
+## Python script to identify secretory proteins based on SignalP and TMHMM results
+script_identify_sec_pro: "workflow/scripts/identify_sec_pro.py"
+
+##### Step 06. Genome Visualization #####
+# Plasmid length threshold (MGCplotter might throw an error if it plots for very small plasmid)
+plas_length_threshold: 3000
+
+##### Step 08. Association between AMR/VF and MGE #####
+# Script to match AMR/VF results and MEG results and merge them into a matrix
+script_match_mge: "workflow/scripts/match_mge.py"
+# Distance in bp between target MGE and AMR/VF
+## Distance within this value would be selected (positive value)
+## Set it to -1 if you want to close the distance check (ONLY to check if MGE and AMR/VF are on the same contig)
+distance_amr_vf_mge: "2000"
+
+##### Step 09. Phylogenetic Analysis #####
+# Script to generate itol annotation files
+script_itol_annotation: "workflow/scripts/generate_itol_annotation.py"

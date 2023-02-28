@@ -1,0 +1,9 @@
+name: goatools
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - goatools=1.2.3=pyh7cba7a3_2
+  - docopt=0.6.2=py_1
+channel_priority: flexible

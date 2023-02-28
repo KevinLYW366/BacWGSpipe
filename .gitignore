@@ -1,0 +1,6 @@
+logs*/
+results*/
+data/
+.snakemake/
+resources/digIS-digISv1.2/
+resources/SPAdes-3.15.4-Linux/

@@ -1,0 +1,8 @@
+name: plasmidfinder
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - plasmidfinder=2.1.6=hdfd78af_0
+channel_priority: flexible

@@ -1,0 +1,9 @@
+name: abricate
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - abricate=1.0.1=ha8f3691_1
+  - pandas=1.3.5=py37he8f5f7f_0
+channel_priority: flexible

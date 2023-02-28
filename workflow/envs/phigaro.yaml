@@ -1,0 +1,8 @@
+name: phigaro
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - phigaro=2.3.0=pyh7b7c402_1
+channel_priority: flexible
