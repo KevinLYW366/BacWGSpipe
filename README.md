@@ -13,7 +13,9 @@ BacWGSpipe supports three types of WGS data sources:
 	
 ## Workflow Structure
 
-![Workflow](BacWGSpipe_workfflow.png)
+<p align="center">
+  <img src="https://github.com/KevinLYW366/BacWGSpipe/blob/main/BacWGSpipe_workflow.png" width="55%">
+</p>
 
 ## Workflow Usage
 
