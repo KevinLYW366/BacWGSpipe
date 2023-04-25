@@ -2,6 +2,6 @@ logs*/
 results*/
 data/
 .snakemake/
-resources/
+resources/*
 !resources/*.zip
 config/config_*.yaml
