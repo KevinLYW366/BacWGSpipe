@@ -26,14 +26,14 @@ rule mlst_run:
 rule mlst_merge:
     input:
         # MLST report by mlst
-        expand("results/05.genotype/{sample}/mlst/{sample}_mlst.txt", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/05.genotype/{sample}/mlst/{sample}_mlst.txt", wildcards)
     output:
         # merged MLST report
         "results/05.genotype/all_mlst_results.xls"
     params:
         indir = "results/05.genotype",
         outdir = "results/05.genotype",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/05.genotype/mlst/mlst_merge.log"

@@ -1,0 +1,9 @@
+name: ccne
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - ccne=1.1.2=hdfd78af_0
+  - pandas=2.0.0=py310h9b08913_0
+channel_priority: flexible

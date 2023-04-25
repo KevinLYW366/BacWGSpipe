@@ -13,7 +13,7 @@ rule mgcplotter_chr:
     params:
         workdir = WORKDIR,
         outdir = "results/06.genome_visualization/{sample}/mgcplotter",
-        # script to split genbank files (from https://github.com/fmalmeida/bacannot)
+        # script to split genbank files
         splitgenbank_script = config["splitgenbank_script"]
     log:
         "logs/06.genome_visualization/mgcplotter_chr/{sample}.log"

@@ -102,7 +102,26 @@ if ASSEMBLY_STRATEGY == "hybrid":
             viralverify -f {input} -o {params.outdir} --hmm {params.hmm} -t {threads} > {log} 2>&1
             """
 
-    # 2.2 Separate assembly fasta into several fasta of chromosome and plasmid based on viralVerify results
+    # # 2.1 Identify plasmid contig in genome assembly using MOB-recon
+    # rule mob_recon:
+    #     input:
+    #         "results/02.assembly/{sample}/unicycler/assembly.fasta"
+    #     output:
+    #         "results/02.assembly/{sample}/mob_recon/contig_report.txt"
+    #     params:
+    #         outdir = "results/02.assembly/{sample}/mob_recon"
+    #     log:
+    #         "logs/02.assembly/mob_recon/{sample}.log"
+    #     threads:
+    #         config["threads"]
+    #     conda:
+    #         "../envs/mob-suite.yaml"
+    #     shell:
+    #         """
+    #         mob_recon -i {input} -o {params.outdir} -n {threads} --force > {log} 2>&1
+    #         """
+
+    # 2.2 Separate assembly fasta into several fasta of chromosome and plasmid based on MOB-recon results
     rule separate_assembly:
         input:
             assembly = "results/02.assembly/{sample}/unicycler/assembly.fasta",
@@ -141,11 +160,11 @@ if ASSEMBLY_STRATEGY == "hybrid":
     # 2.3 Summarize genome assembly statistics to be presented in summary report
     rule assembly_stats:
         input:
-            expand("results/02.assembly/{sample}/assembly/{sample}.fasta", sample=SAMPLES)
+            lambda wildcards: get_qualified_results("results/02.assembly/{sample}/assembly/{sample}.fasta", wildcards)
         output:
             "results/02.assembly/all_assembly_stats.xls"
         params:
-            sample_list = config["sample_list"],
+            sample_list = SAMPLE_LIST_UPDATE,
             indir = "results/02.assembly",
             outdir = "results/02.assembly",
             # Python script to summarize genome assembly statistics
@@ -164,6 +183,23 @@ elif ASSEMBLY_STRATEGY == "short" or ASSEMBLY_STRATEGY == "long":
     rule separate_assembly:
         input:
             assembly = "results/02.assembly/{sample}/unicycler/assembly.fasta",
+        output:
+            assembly_all = "results/02.assembly/{sample}/assembly/{sample}.fasta",
+            flag = "results/02.assembly/{sample}/assembly/separate_assembly.done"
+        log:
+            "logs/02.assembly/separate_assembly/{sample}.log"
+        shell:
+            """
+            cp -rva {input.assembly} {output.assembly_all} > {log} 2>&1
+
+            # Create a flag file when everything done
+            touch {output.flag} 2>> {log}
+            """
+elif ASSEMBLY_STRATEGY == "skip":
+    # 2.2 If assembly fasta files are input directly, just use them for the rest of analysis
+    rule separate_assembly:
+        input:
+            assembly = config["assembly_input_dir"] + "/{sample}.fasta",
         output:
             assembly_all = "results/02.assembly/{sample}/assembly/{sample}.fasta",
             flag = "results/02.assembly/{sample}/assembly/separate_assembly.done"
@@ -224,11 +260,11 @@ if ASSEMBLY_STRATEGY == "short" or ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRAT
     # Summarize genome assembly statistics to be presented in summary report
         rule assembly_stats:
             input:
-                expand("results/02.assembly/quast/{sample}/report.html", sample=SAMPLES)
+                lambda wildcards: get_qualified_results("results/02.assembly/quast/{sample}/report.html", wildcards)
             output:
                 "results/02.assembly/all_assembly_stats.xls"
             params:
-                sample_list = config["sample_list"],
+                sample_list = SAMPLE_LIST_UPDATE,
                 indir = "results/02.assembly",
                 outdir = "results/02.assembly",
                 # Python script to summarize genome assembly statistics
@@ -246,7 +282,7 @@ if ASSEMBLY_STRATEGY == "short" or ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRAT
 # 3.2 MultiQC: merge all Quast reports
 rule multiqc_quast:
     input:
-        expand("results/02.assembly/quast/{sample}/report.html", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/02.assembly/quast/{sample}/report.html", wildcards)
     output:
         "results/02.assembly/multiqc/multiqc_report.html"
     params:

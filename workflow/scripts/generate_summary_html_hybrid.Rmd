@@ -1,0 +1,1368 @@
+---
+params:
+  sample_list: "../../config/sample_list_test_data.txt"
+  pass_sample_list: "../../results/01.data_clean/short_read/all.kraken2.pass.list"
+  long_read_qc_raw: "../../results/00.rawdata/all_raw_NanoStats.xls"
+  long_read_qc_clean: "../../results/01.data_clean/long_read/all_clean_NanoStats.xls"
+  long_read_qc_dir: "../../results/01.data_clean/long_read"
+  fastp_qc_stats: "../../results/01.data_clean/short_read/all_fastp_stats.xls"
+  kraken2_results: "../../results/01.data_clean/short_read/all_kraken2_result.xls"
+  assembly_stats: "../../results/02.assembly/all_assembly_stats.xls"
+  genome_component_dir: "../../results/03.genome_component"
+  plsdb_results: "../../results/03.genome_component/all_plsdb_results.xls"
+  mob_suite_results: "../../results/03.genome_component/all_mob-suite_results.xls"
+  phigaro_results: "../../results/03.genome_component/all_phigaro_results.xls"
+  icefinder_results: "../../results/03.genome_component/all_icefinder_results.xls"
+  digis_results: "../../results/03.genome_component/all_digis_results.xls"
+  islandpath_results: "../../results/03.genome_component/all_islandpath_results.xls"
+  cctyper_results: "../../results/03.genome_component/all_cctyper_results.xls"
+  gene_function_dir: "../../results/04.gene_function"
+  mlst_results: "../../results/05.genotype/all_mlst_results.xls"
+  genome_visualization_dir: "../../results/06.genome_visualization"
+title: | 
+  <center><br></center>
+  <center><br></center>
+  <center><br></center>
+  <center>BacWGSpipe Summary Report</center>
+  <center><br></center>
+date: "Date: `r format(Sys.time(), '%Y-%m-%d')`"
+output:
+  html_document:
+    # css: background.css
+    toc: true
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+    toc_depth: 5
+    theme: cerulean
+    highlight: tango
+  pdf_document:
+    toc: true
+    toc_depth: '5'
+---
+
+<style type ="text/css">
+.main-container {
+  max-width: 1500px; 
+  margin-left: 50px;    
+  margin-right: 50px;
+  margin-bottom: 0px;
+}
+td { /* Table  */
+  font-size: 15px; 
+  text-align: center; 
+  font-family: "Times","sans-serif";
+}
+th {
+  font-size: 15px; 
+  text-align: center; 
+  font-family: "Times","sans-serif";
+  font-weight: 600;
+}
+h1.title {
+  font-size: 28px;
+  color: #377EB8;
+}
+h1 {
+  font-size: 25px; 
+  font-weight: 600; 
+  color: #377EB8; 
+  font-family: "Times","sans-serif";
+}
+h2 {
+  font-size: 22px; 
+  font-weight: 600; 
+  color: #377EB8; 
+  font-family: "Times","sans-serif";
+}
+h3 {
+  font-size: 20px; 
+  font-weight: 600; 
+  color: #377EB8; 
+  font-family: "Times","sans-serif";
+}
+h4 {
+  font-size: 18px; 
+  font-weight: 600; 
+  color: #377EB8; 
+  font-family: "Times","sans-serif";
+}
+h4.author {
+  font-size: 16px;
+  color: Black;
+  font-weight: normal;
+  font-family: "Times","sans-serif";
+}
+h4.date {
+  font-size: 16px;
+  color: Black;
+  font-weight: normal;
+  font-family: "Times","sans-serif";
+}
+h5 {
+  line-height: 200%;  
+  font-weight: 600;  
+  font-family: "Times","sans-serif";
+}
+img {
+  margin-left: auto;    
+  margin-right:auto;    
+  display:block;
+}
+p {
+  line-height: 180%;    
+  font-family: "Times";     
+  text-align: justify;    
+  font-size: 15px;
+}
+</style>
+
+<!-- <style type="text/css"> -->
+<!-- .main-container { -->
+<!--   max-width: 1800px; -->
+<!--   margin-left: auto; -->
+<!--   margin-right: auto; -->
+<!-- } -->
+<!-- </style> -->
+
+```{r load packages, echo = FALSE, message = FALSE, warning = FALSE}
+library(htmltools)
+library(DT)
+library(EBImage)
+library(dplyr)
+library(glue)
+```
+
+***
+
+&nbsp;
+
+## 1. Analysis Pipeline
+
+1) **Quality Control and Pre-processing of Raw Data**: trim and remove low-quality reads from raw data to get clean data, and perform quality control step;
+
+2) **Genome Assembly and Annotation**: conduct de novo genome assembly and annotate assembly genome;
+
+3) **Genome Component Analysis**: analyze components of the assembly genome, including the prediction of coding genes, non-coding RNAs, plasmid, prophage, integrative and conjugative element (ICE), insertion sequences (IS), genomic island (GI) and CRISPR-Cas;
+
+4) **Gene Function Analysis**: annotate the sequences of coding genes based on different databases, including GO, KEGG, COG, NCBI Taxonomy and some databases related to the pathogenicity of pathogens.
+
+5) **Genytyping**: perform genotyping based on PubMLST database;
+
+6) **Genome Visualization**: visualize the complete assembly genome with some basic features and the results of genome component analysis and gene function analysis;
+
+7) **Comparative Genomics Analysis**: identify the phylogeny of the bacterial genomes to study the evolutionary relationships among different bacterial species or strains.
+
+***
+
+&nbsp;
+
+## 2. Analysis Results
+
+### 2.1 Data Overview
+
+**Long-read Third-generation Sequencing (TGS) Data**
+
+Statistics of TGS raw data:
+
+<center>**Table 2-1 Statistics table of TGS raw data**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+long_read_qc_raw_df <- read.table(
+  params$long_read_qc_raw, 
+  header = T, 
+  na.strings = c("NA"), 
+  sep = "\t"
+)
+
+datatable(
+  long_read_qc_raw_df, 
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  colnames = c("Sample ID", "Number of Reads", "Total bases (bp)", 
+                 "Mean Read Length (bp)", "N50 Read Length (bp)", "Mean Read Quality"),
+  extensions = c("Scroller", "Buttons"),
+  option = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of TGS raw data files: results/00.rawdata/long_read;
+- QC table of TGS raw data: results/00.rawdata/long_read/all_raw_NanoStats.xls;
+- QC report of TGS raw data: results/00.rawdata/long_read/multiqc_raw/multiqc_report.html.
+
+&nbsp;
+
+Preprecessing and quality control are performed on TGS raw data using Filtong<sup>[1]</sup> with parameter "--min_length 1000 --keep_percent 95" to filter reads shorter than 1000bp or with the lowest 5% quality values to acquire clean data. Statistics of TGS clean data:
+
+<center>**Table 2-2 Statistics table of TGS clean data**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+long_read_qc_clean_df <- read.table(
+  params$long_read_qc_clean, 
+  header = T, 
+  na.strings = c("NA"), 
+  sep = "\t"
+)
+
+datatable(
+  long_read_qc_clean_df, 
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  colnames = c("Sample ID", "Number of Reads", "Total bases (bp)", 
+                 "Mean Read Length (bp)", "N50 Read Length (bp)", "Mean Read Quality"),
+  extensions = c("Scroller", "Buttons"),
+  option = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+Distribution of the read length in TGS clean data:
+
+<center>**Figure 2-1 Distribution plot of the read length in TGS clean data**</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$sample_list, character())
+pics <- paste(params$long_read_qc_dir, sample_list, "nanoplot_clean", sample_list, sep="/")
+pics <- paste0(pics, "_clean_Non_weightedHistogramReadlength.png")
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of TGS clean data files: results/01.data_clean/long_read/cleandata;
+- QC table of TGS clean data: results/01.data_clean/long_read/all_clean_NanoStats.xls;
+- QC report of TGS clean data: results/01.data_clean/long_read/multiqc_clean/multiqc_report.html.
+
+&nbsp;
+
+**Short-read NGS Data**
+
+Preprecessing and quality control are performed on NGS raw data using fastp<sup>[2]</sup> to ensure the accuracy and reliability of downstrea analysi.
+
+Processing details:
+
+1) reads containing more than a certain proportion of low quality bases were removed;
+
+2) reads with a certain proportion of N bases were removed;
+
+3) adapter sequences were removed;
+
+4) duplication pollution was removed.
+
+Detailed quality control information of NGS data:
+
+<center>**Table 2-3 Statistics table of NGS data**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+fastp_qc_stats_df <- read.table(
+  params$fastp_qc_stats, 
+  header = T, 
+  na.strings = c("NA"), 
+  sep = "\t"
+)
+
+datatable(
+  fastp_qc_stats_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
+  colnames = c("Sample ID", "Clean Reads Length (bp)",
+               "Raw Data (bp)", "Filtered Reads (%)", "Clean Data (bp)",
+               "Clean GC (%)", "Clean Q20 (%)", "Clean Q30 (%)"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    #scrollX = TRUE,
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    #fixedColumns = list(leftColumns = 2),
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of NGS raw data files: results/00.rawdata/short_read/rawdata;
+- Directory of NGS clean data files: results/01.data_clean/short_read/cleandata;
+- QC table of NGS data: results/01.data_clean/short_read/all_fastp_stats.xls;
+- QC report of NGS data: results/01.data_clean/short_read/multiqc/multiqc_report.html.
+
+&nbsp;
+
+Identify species based on NGS short-read clean data using Kraken2<sup>[3]</sup> with PlusPF database ([https://benlangmead.github.io/aws-indexes/k2](https://benlangmead.github.io/aws-indexes/k2)). Present the classification result with the highest proportion of reads. Results of species identification analysis could reflect the pollution level in samples' sequencing data and are shown in the following table (**Some rare strains may not be identified due to the limitation of the database, and the identification results are for reference only**):
+
+<center>**Table 2-4 Summary results table of species identification**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+kraken2_results_df <- read.table(
+  params$kraken2_results, 
+  header = F, 
+  na.strings = c("NA"), 
+  sep = "\t",
+  comment.char = '#'
+) %>%
+  select(V1, V3, V4)
+
+datatable(
+  kraken2_results_df, 
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  colnames = c("Sample ID", "Main Species", "Percentage of Main Species (%)"),
+  extensions = c("Scroller", "Buttons"),
+  option = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/01.data_clean/short_read/*/bracken;
+- Summary result file: results/01.data_clean/short_read/all_kraken2_result.xls.
+
+***
+
+&nbsp;
+
+### 2.2 Genome Overview
+
+Unicycler<sup>[4]</sup> is used to assemble the complete genome using short-read NGS clean data and long-read TGS clean data, and then screen the chromosome and plasmid sequences. Statistics of genome assembly:
+
+<center>**Table 2-5 Statistics table of genome assembly**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+assembly_stats_df <- read.table(
+  params$assembly_stats, 
+  header = T, 
+  na.strings = c("NA"), 
+  sep = "\t"
+)
+
+datatable(
+  assembly_stats_df, 
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  colnames = c("Sample ID", "Type", "Contig ID", 
+                 "Size (bp)", "GC (%)", "Circuler?"),
+  extensions = c("Scroller", "Buttons"),
+  option = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of genome assembly files: results/02.assembly/*/assembly;
+- Directory of genome assembly QC files: results/02.assembly/quast;
+- Genome assembly QC report: results/02.assembly/multiqc/multiqc_report.html.
+
+***
+
+&nbsp;
+
+### 2.3 Genome Component Analysis
+
+Microbial genome contains very rich functional regions. In addition to coding gene regions, there are also non-coding regions that realize transcriptional regulation, post-transcriptional regulation, translational regulation, epigenetic regulation and other functions. Some functional regions are also related to the diversity of species evolution.
+
+Bacterial mobile genetic elements (MGEs) are segments of DNA that can move between different positions within a bacterial genome or between different bacterial genomes. These MGEs can carry various genes, including those involved in antibiotic resistance, virulence, and metabolic pathways, and play a critical role in the evolution and adaptation of bacterial populations to changing environments. However, they can also contribute to the spread of antibiotic resistance and virulence genes among bacterial populations, posing a significant threat to public health.
+
+Coding genes, repetitive sequences, non-coding RNA, mobile genetic elements and etc. were predicted to obtain the composition of the target genome through a variety of methods.
+
+&nbsp;
+
+#### 2.3.1 Coding Genes
+
+Prokka<sup>[5]</sup> is used to predict coding genes from genome assembly. Statistics of coding genes prediction results:
+
+<center>**Table 2-6 Statistics table of coding genes prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+prokka_tsv <- paste(params$genome_component_dir, sample_list, "prokka", paste0(sample_list, ".tsv"), sep="/")
+prokka_txt <- paste(params$genome_component_dir, sample_list, "prokka", paste0(sample_list, ".txt"), sep="/")
+prokka_tsv_df <- data.frame(locus_tag=character(),
+                            ftype=character(),
+                            length_bp=integer(),
+                            gene=character(),
+                            EC_number=character(),
+                            COG=character(),
+                            product=character(),
+                            sample_id=character(),
+                            genome_size=integer())
+
+n <- 1
+for (f in prokka_tsv) {
+  sample_id <- sample_list[n]
+  txt <- prokka_txt[n]
+  txt_df <- read.table(file=txt, sep=":", header=FALSE, row.names=1)
+  genome_size <- as.integer(trimws(txt_df["bases", "V2"]))
+  df_tmp <- read.csv(file=f, sep="\t", header=TRUE)
+  df_tmp$genome_size <- genome_size
+  df_tmp$sample_id <- sample_id
+  prokka_tsv_df <- rbind(prokka_tsv_df, df_tmp)
+  n <- n + 1
+}
+
+prokka_tsv_df_sub <- prokka_tsv_df %>%
+  filter(ftype == "CDS") %>%
+  group_by(sample_id) %>%
+  summarise(genome_size = mean(genome_size),
+            gene_number = n(),
+            gene_tot_len = sum(length_bp),
+            gene_avg_len = mean(length_bp)) %>%
+  mutate(gene_percent = gene_tot_len/genome_size) %>%
+  mutate(gene_avg_len = round(gene_avg_len, 0),
+         gene_percent = round(gene_percent*100, 2))
+
+write.table(prokka_tsv_df_sub, file=paste(params$genome_component_dir, "all_prokka_gene.xls", sep="/"), 
+            sep="\t", col.names=TRUE, row.names=FALSE)
+
+datatable(
+  prokka_tsv_df_sub,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  colnames = c("Sample ID", "Genome size (bp)", "Gene number (#)",
+               "Gene total length (bp)", "Gene average length (bp)", "Gene length/Genome (%)"),
+  extensions = c("Scroller", "Buttons"),
+  option = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+Plot the distribution of coding gene length:
+
+<center>**Figure 2-2 Distribution plot of coding gene length **</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+pics <- paste(params$genome_component_dir, sample_list, "prokka", paste0(sample_list, "_gene_length.png"), sep="/")
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/prokka;
+- Summary result file: results/03.genome_component/all_prokka_gene.xls.
+
+&nbsp;
+
+#### 2.3.2 Non-coding RNAs
+
+Non-coding RNA (ncRNA) is a class of RNA molecules that perform multiple biological functions. It does not carry information translated into protein itself, but directly plays a role in life activities at the RNA level. For microorganisms, researches commonly include transfer RNA (tRNA), ribosomal RNA (rRNA), small RNA (sRNA), etc.
+
+Prokka<sup>[5]</sup> is used to predict tRNA and rRNA. Statistics of ncRNAs prediction results:
+
+<center>**Table 2-7 Statistics table of ncRNAs prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+prokka_tsv <- paste(params$genome_component_dir, sample_list, "prokka", paste0(sample_list, ".tsv"), sep="/")
+prokka_txt <- paste(params$genome_component_dir, sample_list, "prokka", paste0(sample_list, ".txt"), sep="/")
+prokka_tsv_df <- data.frame(locus_tag=character(),
+                            ftype=character(),
+                            length_bp=integer(),
+                            gene=character(),
+                            EC_number=character(),
+                            COG=character(),
+                            product=character(),
+                            sample_id=character())
+
+n <- 1
+for (f in prokka_tsv) {
+  sample_id <- sample_list[n]
+  df_tmp <- read.csv(file=f, sep="\t", header=TRUE)
+  df_tmp$sample_id <- sample_id
+  prokka_tsv_df <- rbind(prokka_tsv_df, df_tmp)
+  n <- n + 1
+}
+
+rna_type_order <- c("tRNA", "5S rRNA", "16S rRNA", "23S rRNA")
+
+prokka_tsv_df_sub <- prokka_tsv_df %>%
+  filter(ftype != "CDS") %>%
+  mutate(rna_type = ifelse(ftype == "tRNA", "tRNA", 
+                           ifelse(ftype == "rRNA" & startsWith(product, "5S"), "5S rRNA", 
+                                  ifelse(ftype == "rRNA" & startsWith(product, "16S"), "16S rRNA",
+                                         ifelse(ftype == "rRNA" & startsWith(product, "23S"), "23S rRNA", "other"))))) %>%
+  filter(rna_type %in% c("tRNA", "5S rRNA", "16S rRNA", "23S rRNA")) %>%
+  group_by(sample_id, rna_type) %>%
+  summarise(number = n(),
+            avg_len = round(mean(length_bp), 0),
+            tot_len = sum(length_bp))
+
+for (s in sample_list) {
+  for (t in rna_type_order) {
+    if (! t %in% prokka_tsv_df_sub[prokka_tsv_df_sub$sample_id == s, "rna_type"]) {
+      prokka_tsv_df_sub[nrow(prokka_tsv_df_sub) + 1,] = list(s, t, 0, 0, 0)
+    }
+  }
+}
+
+prokka_tsv_df_sub <- prokka_tsv_df_sub %>% 
+  slice(match(rna_type_order, rna_type))
+
+write.table(prokka_tsv_df_sub, file=paste(params$genome_component_dir, "all_prokka_ncRNA.xls", sep="/"), 
+            sep="\t", col.names=TRUE, row.names=FALSE)
+
+datatable(
+  prokka_tsv_df_sub,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  colnames = c("Sample ID", "Type", "Number (#)",
+               "Average length (bp)", "Total length (bp)"),
+  extensions = c("Scroller", "Buttons"),
+  option = list(
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollY = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/prokka;
+- Summary result file: results/03.genome_component/all_prokka_ncRNA.xls.
+
+&nbsp;
+
+#### 2.3.3 Plasmid
+
+Plasmid, which plays a crucial role in bacterial environmental adaptation, is an extrachromatic genetic element independent of chromosome replication. Because of their potential mobilization or binding capacity, plasmids are important genetic vectors for antimicrobial resistance genes and virulence factors, and have enormous and increasing clinical significance.
+
+Assembled plasmid sequences were compared with the PLSDB database by using the screen command <sup>[6]</sup> of Mash software, and the comparison results were analyzed. Top 5 total score values in the comparison results are as follows:
+
+<center>**Table 2-8 Statistics table of top 5 matched plasmid sequences in PLSDB **</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plsdb_results_df <- read.table(
+  params$plsdb_results, 
+  header = T, 
+  sep = "\t"
+) %>%
+  select(Sample_ID, Plasmid_ID, Query_length, Plasmid_accession, Length_NUCCORE, 
+         Shared_hashes, P.value, Identity, Description) %>%
+  mutate(P.value = round(P.value, 1)) %>%
+  group_by(Sample_ID) %>%
+  slice(1:5)
+
+datatable(
+  plsdb_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
+  colnames = c("Sample ID", "Query ID", "Query length (bp)",
+               "Subject ID", "Subject length (bp)", "Score",
+               "P-value", "Identity", "Subject description"),
+  option = list(
+    autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scrollX = TRUE,
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    fixedColumns = list(leftColumns = 2),
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    language = list(emptyTable = "No plasmid was found!")
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/plsdb;
+- Summary result file: results/03.genome_component/all_plsdb_results.xls.
+
+&nbsp;
+
+MOB-suite<sup>[7]</sup> was used to detect the mobility<sup>[8]</sup> of assembled plasmid sequences. According to the definition of bacterial plasmid mobility, the plasmid can be divided into the following three categories: 1. Conjugative: contains all oriT, relaxase, T4CP and T4SS elements; 2. Mobilizable: must contain oriT and relaxase, may have T4CP, but lacks T4SS element; 3. Non-mobilizable: plasmids other than the above.
+
+<center>**Table 2-9 Summary statistics table of Plasmid mobility prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+mob_suite_results_df <- read.table(
+  params$mob_suite_results, 
+  header = T, 
+  sep = "\t"
+) %>%
+  select(sample_id, plasmid_id, rep_type.s., relaxase_type.s., 
+         mpf_type, orit_type.s., predicted_mobility)
+
+datatable(
+  mob_suite_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
+  colnames = c("Sample ID", "Plasmid ID", "Replicon type",
+               "Relaxase type", "Mate-Pair formation type", 
+               "Origin of transfer type", "Mobility prediction"),
+  option = list(
+    autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scrollX = TRUE,
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    fixedColumns = list(leftColumns = 2),
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    language = list(emptyTable = "No plasmid was found!")
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/mob-suite;
+- Summary result file: results/03.genome_component/all_mob-suite_results.xls.
+
+&nbsp;
+
+#### 2.3.4 Prophage
+
+The nucleic acid of a mild phage that is integrated into the host genome is called a prophage and can replicate or divide and pass synchronously with the host bacterial DNA. The presence of prophage sequences may make some bacteria acquire antibiotic resistance, enhance environmental adaptability, improve adhesion or make bacteria become pathogenic bacteria.
+
+Phigaro<sup>[9]</sup> was used to predict the prophage on the genome assembly. Phigaro annotates the phage gene using the hidden Markov model (HMM) of the pVOGs (pVOGs) spectra of prokaryotes and viruses.
+
+<center>**Table 2-10 Summary statistics table of Prophage prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+phigaro_results_df <- read.table(
+  params$phigaro_results, 
+  header = T, 
+  sep = "\t"
+) %>% 
+  mutate(len = abs(end - begin) + 1) %>% 
+  group_by(sample) %>%
+  summarise(num = n(),
+            tot_len = sum(len),
+            avg_len = round(mean(len), 0))
+
+sample_list <- scan(params$pass_sample_list, character())
+for (s in sample_list) {
+  if (! s %in% phigaro_results_df$sample) {
+    phigaro_results_df[nrow(phigaro_results_df) + 1,] = list(s, 0, 0, 0)
+  }
+}
+
+datatable(
+  phigaro_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "Buttons"),
+  colnames = c("Sample ID", "Prophage number (#)", "Total length (bp)",
+               "Average length (bp)"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/phigaro；
+- Summary result file: results/03.genome_component/all_phigaro_results.xls.
+
+&nbsp;
+
+#### 2.3.5 Integrative and Conjugative Element
+
+Integrative and conjugative elements (ICE) are highly modular mobile genetic elements that are essential for horizontal transfer of antibiotic resistance and virulence factor genes. Integrons capture foreign gene boxes through site-specific recombination and enable them to be expressed. Meanwhile, integrons can be located on plasmids or participate in the transfer as a component of transposons to spread drug-resistant genes.
+
+ICEfinder<sup>[10]</sup> can quickly detect ICE for bacterial genome sequence, and the ICE types detected include T4SS-type ICEs, AICEs and IMEs.
+
+<center>**Table 2-11 Summary statistics table of ICE prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+icefinder_results_df <- read.table(
+  params$icefinder_results, 
+  header = T, 
+  sep = "\t"
+) %>% 
+  group_by(sample) %>%
+  summarise(num = n(),
+            tot_len = sum(Length),
+            avg_len = round(mean(Length), 0))
+
+sample_list <- scan(params$pass_sample_list, character())
+for (s in sample_list) {
+  if (! s %in% icefinder_results_df$sample) {
+    icefinder_results_df[nrow(icefinder_results_df) + 1,] = list(s, 0, 0, 0)
+  }
+}
+
+datatable(
+  icefinder_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "Buttons"),
+  colnames = c("Sample ID", "ICE number (#)", "Total length (bp)",
+               "Average length (bp)"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/icefinder；
+- Summary result file: results/03.genome_component/all_icefinder_results.xls.
+
+&nbsp;
+
+#### 2.3.6 Insertion Sequences
+
+Bacterial Insertion sequences (IS) are the smallest and most abundant autonomous transpose elements in prokaryotic genomes. IS is widely present in prokaryotic genomes and may occur with a high copy number. They play an important role in genome evolution, structure, and host genome fitness. Because of their mobility, IS acts as mutagens that can cause regulation of adjacent gene expression, affect virulence, alter exogenous or antimicrobial resistance, or regulate metabolic activity.
+
+digIS<sup>[11]</sup> is based on the pHMM model assembled by the catalytic domain of transposition enzyme, and shows very good performance in detecting known IS. At the same time, digIS also has certain detection ability for detecting remote IS and speculated new IS.
+
+<center>**Table 2-12 Summary statistics table of IS prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+digis_results_df <- read.table(
+  params$digis_results, 
+  header = T, 
+  sep = "\t"
+) %>% 
+  mutate(len = abs(sstart - send) + 1) %>% 
+  group_by(sample) %>%
+  summarise(num = n(),
+            tot_len = sum(len),
+            avg_len = round(mean(len), 0))
+
+sample_list <- scan(params$pass_sample_list, character())
+for (s in sample_list) {
+  if (! s %in% digis_results_df$sample) {
+    digis_results_df[nrow(digis_results_df) + 1,] = list(s, 0, 0, 0)
+  }
+}
+
+datatable(
+  digis_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "Buttons"),
+  colnames = c("Sample ID", "IS number (#)", "Total length (bp)",
+               "Average length (bp)"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/digis；
+- Summary result file: results/03.genome_component/all_digis_results.xls.
+
+&nbsp;
+
+#### 2.3.7 Genomic Island
+
+Genomic Island (GI) is a genomic region found in some bacteria, phages, or plasmids that is integrated into the microbial genome by horizontal gene transfer. A gene island can be related to a variety of biological functions such as pathogenic mechanism and organism adaptability. Comparative genomic analysis can be used to study the specificity and functional sources of microorganisms with special functions.
+
+Based on phylogenetic composition, IslandPath-DIOMB<sup>[12]</sup> is applied to predict gene islands. IslandPath-DIOMB identifies gene islands and potential horizontal gene transfer by detecting dinonotide bias and mobility genes in the phylogenetic system, such as transposase or integrase.
+
+<center>**Table 2-13 Summary statistics table of GI prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+islandpath_results_df <- read.table(
+  params$islandpath_results, 
+  header = T, 
+  sep = "\t"
+) %>% 
+  mutate(len = abs(start - end) + 1) %>% 
+  group_by(sample) %>%
+  summarise(num = n(),
+            tot_len = sum(len),
+            avg_len = round(mean(len), 0))
+
+sample_list <- scan(params$pass_sample_list, character())
+for (s in sample_list) {
+  if (! s %in% islandpath_results_df$sample) {
+    islandpath_results_df[nrow(islandpath_results_df) + 1,] = list(s, 0, 0, 0)
+  }
+}
+
+datatable(
+  islandpath_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "Buttons"),
+  colnames = c("Sample ID", "GI number (#)", "Total length (bp)",
+               "Average length (bp)"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/islandpath；
+- Summary result file: results/03.genome_component/all_islandpath_results.xls.
+
+&nbsp;
+
+#### 2.3.8 CRISPR-Cas
+
+The CRISPR-Cas system is a prokaryotic immune system designed to defend against the invasion of foreign genetic material, such as phage viruses and foreign plasmids. It can recognize foreign DNA and silence the expression of foreign genes. CRISPR stands for Clustered Regularly Interspersed Short Palindromic Repeats -- clusters of regularly interspersed short palindromic repeats consisting of short, conserved repeats and spacers. Cas exists near the CRISPR site and is a double-stranded DNA nuclease that can cut the target site under the guidance of guide RNA. The CRISPRs cluster and Cas proteins together form the CRISPR-Cas system. In this project, CRISPRCasTyper<sup>[13]</sup> is used to predict CRISPR-Cas.
+
+<center>**Table 2-14 Summary statistics table of CRISPR-Cas prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+cctyper_results_df <- read.table(
+  params$cctyper_results, 
+  header = T, 
+  sep = "\t"
+) %>% 
+  mutate(len = abs(End - Start) + 1) %>% 
+  group_by(Sample) %>%
+  summarise(num = n(),
+            tot_len = sum(len),
+            avg_len = round(mean(len), 0))
+
+sample_list <- scan(params$pass_sample_list, character())
+for (s in sample_list) {
+  if (! s %in% cctyper_results_df$Sample) {
+    cctyper_results_df[nrow(cctyper_results_df) + 1,] = list(s, 0, 0, 0)
+  }
+}
+
+datatable(
+  cctyper_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "Buttons"),
+  colnames = c("Sample ID", "CRISPR-Cas number (#)", "Total length (bp)",
+               "Average length (bp)"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/cctyper；
+- Summary result file: results/03.genome_component/all_cctyper_results.xls.
+
+***
+
+&nbsp;
+
+### 2.4 Gene Function Analysis
+
+#### 2.4.1 Gene Function Annotation
+
+At present, annotations of GO, KEGG, COG and NCBI Taxonomy are performed.
+
+The basic steps of functional annotation are as follows:
+
+1) The protein sequences of predicted genes were mapped to eggNOG database<sup>[15]</sup> using eggNOG-mapper<sup>[14]</sup>;
+
+2) Apply functional annotation of corresponding database based on mapping results.
+
+**Result files:**
+
+- Directory of result files: results/04.gene_function/*/eggnog-mapper.
+
+&nbsp;
+
+##### 2.4.1.1 GO Database Annotation
+
+The full name of GO is Gene Ontology<sup>[16]</sup>, which is an internationally standardized classification system for gene function description. GO is divided into three main categories: 1) Cellular Component: used to describe subcellular structure, location, and macromolecular complex, such as nucleolus, telomeres, and complexes that recognize initiation; 2) Molecular Function: It is used to describe the function of individual genes and gene products, such as binding with carbohydrates or activity of ATP hydrolase; 3) Biological Process: It is used to describe the biological processes in which the products encoded by genes are involved, such as mitosis or purine metabolism.
+
+Annotation results of three categories of GO database are shown as follows:
+
+<center>**Figure 2-3 Bar plot of GO functional annotation**</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+pics <- paste(params$gene_function_dir, sample_list, "GO", paste0(sample_list, "_go.png"), sep="/")
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>**Note** x-axis: GO functional categories, y-axis: annotated gene numbers.</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/04.gene_function/*/GO.
+
+&nbsp;
+
+##### 2.4.1.2 KEGG Database Annotation
+
+KEGG full term Kyoto Encyclopedia of Genes and Genomes<sup>[17]</sup>. A database that systematically analyzes the metabolic pathways of gene products and compounds in cells and the functions of these gene products. It integrates genomic, molecular and biochemical data, including KEGG PATHWAY, KEGG DRUG, KEGG DISEASE, KEGG MODULE, KEGG GENES and genome GENOME) and so on. The KO(KEGG ORTHOLOG) system links various KEGG annotation systems together. KEGG has established a complete KO annotation system for functional annotation of the genome or transcriptome of newly sequenced species. See [http://www.genome.jp/kegg/](http://www.genome.jp/kegg/).
+
+Plot the number of genes with annotation in KEGG database:
+
+<center>**Figure 2-4 Bar plot of KEGG pathway annotation**</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+pics <- paste(params$gene_function_dir, sample_list, "KEGG", paste0(sample_list, "_kegg.png"), sep="/")
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>**Note** y-axis: KEGG pathway level1 categories; x-axis: number of genes.</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/04.gene_function/*/KEGG.
+
+&nbsp;
+
+##### 2.4.1.3 COG Database Annotation
+
+COG, whose full name is Cluster of Orthologous Groups of proteins<sup>[18]</sup>, is a protein database created and maintained by NCBI and constructed according to the phylogenetic relationship classification of proteins encoding from complete genomes of bacteria, algae, and eukaryotes. By comparison, a protein sequence can be annotated into a COG. Each COG cluster is composed of lineal homologous sequences, so the function of the sequence can be predicted. COG database according to the function can be divided into the total 26 classes, see [https://www.ncbi.nlm.nih.gov/research/cog](https://www.ncbi.nlm.nih.gov/research/cog).
+
+Plot of summary statistics:
+
+<center>**Figure 2-5 Bar plot of COG functional annotation**</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+pics <- paste(params$gene_function_dir, sample_list, "COG", paste0(sample_list, "_cog.png"), sep="/")
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>**Note** x-axis: COG functional type; y-axis: number of genes.</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/04.gene_function/*/COG.
+
+&nbsp;
+
+##### 2.4.1.4 NCBI Taxonomy Database Annotation
+
+NCBI Taxonomy<sup>[19]</sup> is a planning classification and nominating method for all organisms in the NCBI public sequence database, including the names of all organisms corresponding to nucleotide or protein sequences in the NCBI gene database. See [https://www.ncbi.nlm.nih.gov/taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy).
+
+Plot of summary statitics:
+
+<center>**Figure 2-6 Bar plot of NCBI Taxonomy annotation**</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+pics <- paste(params$gene_function_dir, sample_list, "Taxonomy", paste0(sample_list, "_taxonomy.png"), sep="/")
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>**Note** x-axis: NCBI Taxonomy species id; y-axis: number of genes.=</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/04.gene_function/*/Taxonomy.
+
+&nbsp;
+
+#### 2.4.2 Secreting Protein Analysis
+
+Secreted proteins are proteins that are synthesized inside the cell and secreted outside the cell to function. For example, some enzymes, antibodies and some hormones. Many pathogenic factors or small molecule metabolites belong to secreted proteins, so secreted protein analysis is of great significance for the study of pathogenic bacteria and metabolic bacteria. The 5' end of the gene encoding secreted protein has a hydrophobic peptide fragment of 15 ~ 35 amino acids encoded by DNA, which is called signal peptide. It guides the subsequent protein polypeptide chain through the membrane structure, and is one of the markers of secreted protein. The secreted protein no longer has hydrophobic transmembrane region outside the signal peptide. After the signal peptide guides the secreted protein to cross the membrane, the signal peptidyase excises the signal peptide at the corresponding site, thus completing the secretion process of mature secreted protein.
+
+Therefore, secreted proteins were analyzed by signal peptide prediction and transmembrane helix structure prediction. The signal peptide prediction tool signalP<sup>[20]</sup> and the transmembrane helix structure prediction tool TMHMM<sup>[21]</sup> were used to predict secreted proteins. Protein coding genes with signal peptide but without transmembrane helical structure outside the signal peptide region were selected as candidate secreted protein coding genes.
+
+<center>**Table 2-15 Statistics table of secreted protein prediction results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+sec_pro_tsv <- paste(params$gene_function_dir, sample_list, "secretory_protein", paste0(sample_list, "_secretory_protein_results.xls"), sep="/")
+sec_pro_tsv_df <- data.frame(sample_id=character(),
+                             signalp_num=integer(),
+                             tmhmm_num=integer(),
+                             sec_pro_num=integer())
+
+n <- 1
+for (f in sec_pro_tsv) {
+  sample_id <- sample_list[n]
+  df_tmp <- read.csv(file=f, sep="\t", header=TRUE, na.strings = c(""))
+  signalp_num <- sum(!is.na(df_tmp$signal_peptides_signalp))
+  tmhmm_num <- sum(!(df_tmp$topology_tmhmm=="Topology=o" | df_tmp$topology_tmhmm=="Topology=i"))
+  sec_pro_num <- sum(!is.na(df_tmp$signal_peptides_signalp) & df_tmp$topology_tmhmm=="Topology=o")
+  sec_pro_tsv_df[nrow(sec_pro_tsv_df) + 1,] = list(sample_id, signalp_num, tmhmm_num, sec_pro_num)
+  n <- n + 1
+}
+
+datatable(
+  sec_pro_tsv_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "Buttons"),
+  colnames = c("Sample ID", "SignalP protein (#)", "TMHMM protein (#)",
+               "Secreory protein (#)"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>**Note** from left to right: number of proteins with signal peptide; number of proteins with transmembrane helix structure; number of secreted proteins.</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/03.genome_component/*/secretory_protein.
+
+&nbsp;
+
+#### 2.4.3 Virulence or Pathogenicity Analysis
+
+##### 2.4.3.1 Virulence factor (VF) Annotation
+
+VFDB database is called Virulence Factors of Pathogenic Bacteria<sup>[22]</sup>. It's used for the study of pathogenic bacteria, chlamydia and mycoplasma. In addition to the species information and description of basic characteristics of virulence genes, It also provides a detailed description of virulence gene functions and pathogenic mechanisms.
+
+Blast<sup>[23]</sup> was used to compare the nucleic acid sequence of the coding gene of the target species with the VFDB database, and the gene of the target species and its corresponding functional annotation information of virulence factors were combined to obtain annotation results.
+
+**Result files:**
+
+- Directory of result files: results/04.gene_function/*/VFDB;
+- Summary table: results/04.gene_function/all_vfdb_results.xls;
+- Summary matrix (position): results/04.gene_function/all_vfdb_results_matrix.xls;
+- Summary matrix (0/1): results/04.gene_function/all_vfdb_results_matrix_binary.xlsx.
+
+&nbsp;
+
+##### 2.4.3.2 Antimicrobial resistance (AMR) Annotation
+
+CARD Database is called Comprehensive Antibiotic Research Database<sup>[24]</sup>, this database is a newly emerged resistance gene database in recent years, it has the advantages of comprehensive information, user-friendly, timely update and maintenance. The core composition of the database is Antibiotic Resistance Ontology (ARO), which integrates the sequence, antibiotic resistance, action mechanism, correlation between ARO and other information. Through the annotation of the database, we can find the name of antibiotic resistance related genes, the antibiotic type to be tolerated and so on.
+
+Resistance Gene Identifier(RGI<sup>[25]</sup>) was used to map amino acid sequences of target species to CARD database (RGI built-in blastp, default evalue ≤ 1e-30). According to the comparison results of RGI, the resistance gene information annotated to the database was counted.
+
+**Result files:**
+
+- Directory of result files: results/04.gene_function/*/CARD;
+- Summary table: results/04.gene_function/all_card_results.xls;
+- Summary matrix (position): results/04.gene_function/all_card_results_matrix.xls;
+- Summary matrix (0/1): results/04.gene_function/all_card_results_matrix_binary.xlsx.
+
+&nbsp;
+
+##### 2.4.3.3 Estimate Carbapenemase-Encoding Gene Copy Number
+
+The production of carbapenase is one of the main mechanisms of carbapenem resistance in gram-negative bacteria. Increased copy number of carbapenase gene (blaCarb) is an important mechanism of carbapenem resistance. The Carbapenemase-encoding gene Copy Number Estimator (CCNE<sup>[26]</sup>) was used to estimate the gene copy number of carbapenemase gene. The software used housekeeping genes as a reference and compared the count of reads mapped to carbapenase genes with those mapped to housekeeping genes.
+
+**Result files:**
+
+- Summary result file: results/04.gene_function/all_ccne_results.xls；
+
+***
+
+&nbsp;
+
+### 2.5 Genotyping
+
+#### 2.5.1 Multi-Locus Sequence Typing (MLST)
+
+MLST is a bacterial typing method mainly based on the determination of nucleotide sequences. Each locus sequence is assigned an allele number according to the time sequence of its discovery. The allele numbers of each strain in the specified order are its allele spectrum, that is, the sequence type (ST) of this strain. Each ST represents a set of individual nucleotide sequence information. The correlation of strains can be found by comparing ST, that is, the closely related strains have the same ST or only a very few different gene loci, while the unrelated strains have at least 3 or more gene loci different.
+
+MLST is performed by a tool called mlst<sup>[27]</sup> based on PubMLST database<sup>[28]</sup>. (**Strains without typing scheme in PubMLST database are not available for MLST typing**)
+
+<center>**Table 2-16 Summary statistics table of MLST results**</center>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+mlst_results_df <- read.table(
+  params$mlst_results, 
+  header = TRUE, 
+  sep = "\t"
+)
+
+datatable(
+  mlst_results_df,
+  class = "hover cell-border order-column stripe",
+  rownames = FALSE,
+  extensions = c("Scroller", "Buttons"),
+  colnames = c("Sample ID", "PubMLST scheme", "ST",
+               "Allele IDs"),
+  option = list(
+    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
+    scroller = TRUE,
+    scrollY = "120px",
+    paging = TRUE,
+    dom = 'Bfrtip',
+    buttons = c('copy', 'excel', 'print'),
+    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+  )
+)
+```
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/05.genotype/*/mlst;
+- Summary result file: results/05.genotype/all_mlst_results.xls.
+
+***
+
+&nbsp;
+
+### 2.6 Genome Visualization
+
+MGCplotter([https://github.com/moshi4/MGCplotter](https://github.com/moshi4/MGCplotter) was used to visualize the complete genome assembly combined with the predicted results of the coding genes. If annotation of non-coding RNA and gene functions was alse analyzed, the corresponding analysis results would also be shown in the figure:
+
+<center>**Figure 2-7 Circos plot of chromosome**</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+pics <- c()
+results_dir <- params$genome_visualization_dir
+for (s in sample_list) {
+  pattern <- glue("{results_dir}/{s}/mgcplotter/with_cog/{s}_chr*.png")
+  pics_tmp <- Sys.glob(pattern)
+  pics <- c(pics, pics_tmp)
+}
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>**Note** Outer to inner tracks mean (1) Forward CDS (2) Reverse CDS (3) rRNA (4) tRNA (5) GC content (6) GC skew, respectively. COG functional classification color is assigned to Forward/Reverse CDS.</center>
+
+<center>&nbsp;</center>
+
+<center>**Plot 2-8 Circos plot of plasmid**</center>
+
+<center>
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+sample_list <- scan(params$pass_sample_list, character())
+pics <- c()
+results_dir <- params$genome_visualization_dir
+for (s in sample_list) {
+  pattern <- glue("{results_dir}/{s}/mgcplotter/with_cog/{s}_plas*.png")
+  pics_tmp <- Sys.glob(pattern)
+  pics <- c(pics, pics_tmp)
+}
+display(readImage(pics), method="browser")
+```
+</center>
+
+<center>**Note** Outer to inner tracks mean (1) Forward CDS (2) Reverse CDS (3) rRNA (4) tRNA (5) GC content (6) GC skew, respectively. COG functional classification color is assigned to Forward/Reverse CDS.</center>
+
+<center>&nbsp;</center>
+
+**Result files:**
+
+- Directory of result files: results/06.genome_visualization/*/mgcplotter.
+
+***
+
+&nbsp;
+
+### 2.7 Comparative Genomics Analysis
+
+Comparative genomics analysis of bacterial genomes is a process of studying the evolutionary relationships among different bacterial species or strains. To identify the phylogeny of the bacterial genomes, pan-genome analysis is performed by Roary<sup>[29]</sup>to generate the core genome alignment, which will then be used by BacWGSpipe to construct a maximum-likelihood phylogenetic tree with IQ-TREE<sup>[30]</sup>. The output tree can be viewed and annotated by any tree-viewing software such as ITOL<sup>[31]</sup>. BacWGSpipe automatically generates annotation files of MLST, AMR, and VF in a format supported by ITOL that can be customized by users. 
+
+**Result files:**
+
+- Directory of pan-genome analysis results: results/07.phylogenetics/roary;
+- Core-genome alignment file: results/07.phylogenetics/roary/core_gene_alignment.aln;
+- Maximum-likelihood phylogenetic tree file: results/07.phylogenetics/iqtree/core_gene_alignment.treefile;
+- Directory of ITOL annotation files: results/07.phylogenetics/itol.
+
+***
+
+&nbsp;
+
+## 3. References
+
+[1] R. R. Wick and P. Menzel, "Filtlong: quality filtering tool for long reads," Available online at: https://github.com/rrwick/Filtlong/, 2017.
+
+[2] Chen, Shifu et al. "fastp: an ultra-fast all-in-one FASTQ preprocessor." Bioinformatics (Oxford, England) vol. 34,17 (2018): i884-i890. doi:10.1093/bioinformatics/bty560
+
+[3] Wood, Derrick E et al. "Improved metagenomic analysis with Kraken 2." Genome biology vol. 20,1 257. 28 Nov. 2019, doi:10.1186/s13059-019-1891-0
+
+[4] Wick, Ryan R et al. "Unicycler: Resolving bacterial genome assemblies from short and long sequencing reads." PLoS computational biology vol. 13,6 e1005595. 8 Jun. 2017, doi:10.1371/journal.pcbi.1005595
+
+[5] Seemann, Torsten. "Prokka: rapid prokaryotic genome annotation." Bioinformatics (Oxford, England) vol. 30,14 (2014): 2068-9. doi:10.1093/bioinformatics/btu153
+
+[6] Ondov, Brian D et al. "Mash Screen: high-throughput sequence containment estimation for genome discovery." Genome biology vol. 20,1 232. 5 Nov. 2019, doi:10.1186/s13059-019-1841-x
+
+[7] Robertson, James, and John H E Nash. "MOB-suite: software tools for clustering, reconstruction and typing of plasmids from draft assemblies." Microbial genomics vol. 4,8 (2018): e000206. doi:10.1099/mgen.0.000206
+
+[8] Smillie, Chris et al. "Mobility of plasmids." Microbiology and molecular biology reviews : MMBR vol. 74,3 (2010): 434-52. doi:10.1128/MMBR.00020-10
+
+[9] Starikova, Elizaveta V et al. "Phigaro: high-throughput prophage sequence annotation." Bioinformatics (Oxford, England) vol. 36,12 (2020): 3882-3884. doi:10.1093/bioinformatics/btaa250
+
+[10] Liu, Meng et al. "ICEberg 2.0: an updated database of bacterial integrative and conjugative elements." Nucleic acids research vol. 47,D1 (2019): D660-D665. doi:10.1093/nar/gky1123
+
+[11] Puterová, Janka, and Tomáš Martínek. "digIS: towards detecting distant and putative novel insertion sequence elements in prokaryotic genomes." BMC bioinformatics vol. 22,1 258. 20 May. 2021, doi:10.1186/s12859-021-04177-6
+
+[12] Bertelli, Claire, and Fiona S L Brinkman. "Improved genomic island predictions with IslandPath-DIMOB." Bioinformatics (Oxford, England) vol. 34,13 (2018): 2161-2167. doi:10.1093/bioinformatics/bty095
+
+[13] Russel, Jakob et al. "CRISPRCasTyper: Automated Identification, Annotation, and Classification of CRISPR-Cas Loci." The CRISPR journal vol. 3,6 (2020): 462-469. doi:10.1089/crispr.2020.0059
+
+[14] Cantalapiedra, Carlos P et al. "eggNOG-mapper v2: Functional Annotation, Orthology Assignments, and Domain Prediction at the Metagenomic Scale." Molecular biology and evolution vol. 38,12 (2021): 5825-5829. doi:10.1093/molbev/msab293
+
+[15] Huerta-Cepas, Jaime et al. "eggNOG 5.0: a hierarchical, functionally and phylogenetically annotated orthology resource based on 5090 organisms and 2502 viruses." Nucleic acids research vol. 47,D1 (2019): D309-D314. doi:10.1093/nar/gky1085
+
+[16] Ashburner, M et al. "Gene ontology: tool for the unification of biology. The Gene Ontology Consortium." Nature genetics vol. 25,1 (2000): 25-9. doi:10.1038/75556
+
+[17] Kanehisa, M, and S Goto. "KEGG: kyoto encyclopedia of genes and genomes." Nucleic acids research vol. 28,1 (2000): 27-30. doi:10.1093/nar/28.1.27
+
+[18] Tatusov, Roman L et al. "The COG database: an updated version includes eukaryotes." BMC bioinformatics vol. 4 (2003): 41. doi:10.1186/1471-2105-4-41
+
+[19] Federhen, Scott. "The NCBI Taxonomy database." Nucleic acids research vol. 40,Database issue (2012): D136-43. doi:10.1093/nar/gkr1178
+
+[20] Teufel, Felix et al. "SignalP 6.0 predicts all five types of signal peptides using protein language models." Nature biotechnology vol. 40,7 (2022): 1023-1025. doi:10.1038/s41587-021-01156-3
+
+[21] Krogh, A et al. "Predicting transmembrane protein topology with a hidden Markov model: application to complete genomes." Journal of molecular biology vol. 305,3 (2001): 567-80. doi:10.1006/jmbi.2000.4315
+
+[22] Chen, Lihong et al. "VFDB: a reference database for bacterial virulence factors." Nucleic acids research vol. 33,Database issue (2005): D325-8. doi:10.1093/nar/gki008
+
+[23] Camacho, Christiam et al. "BLAST+: architecture and applications." BMC bioinformatics vol. 10 421. 15 Dec. 2009, doi:10.1186/1471-2105-10-421
+
+[24] McArthur, Andrew G et al. "The comprehensive antibiotic resistance database." Antimicrobial agents and chemotherapy vol. 57,7 (2013): 3348-57. doi:10.1128/AAC.00419-13
+
+[25] Alcock, Brian P et al. "CARD 2020: antibiotic resistome surveillance with the comprehensive antibiotic resistance database." Nucleic acids research vol. 48,D1 (2020): D517-D525. doi:10.1093/nar/gkz935
+
+[26] Jiang, Jianping et al. "Carbapenemase-Encoding Gene Copy Number Estimator (CCNE): a Tool for Carbapenemase Gene Copy Number Estimation." Microbiology spectrum vol. 10,4 (2022): e0100022. doi:10.1128/spectrum.01000-22
+
+[27] Seemann T, mlst Github https://github.com/tseemann/mlst
+
+[28] Jolley, Keith A et al. "Open-access bacterial population genomics: BIGSdb software, the PubMLST.org website and their applications." Wellcome open research vol. 3 124. 24 Sep. 2018, doi:10.12688/wellcomeopenres.14826.1
+
+[29] A. J. Page et al., "Roary: rapid large-scale prokaryote pan genome analysis," Bioinformatics, vol. 31, no. 22, pp. 3691–3693, 2015.
+
+[30] L.-T. Nguyen, H. A. Schmidt, A. Von Haeseler, and B. Q. Minh, "IQ-TREE: a fast and effective stochastic algorithm for estimating maximum-likelihood phylogenies," Molecular biology and evolution, vol. 32, no. 1, pp. 268–274, 2015.
+
+[31] I. Letunic and P. Bork, "Interactive Tree Of Life (iTOL) v5: an online tool for phylogenetic tree display and annotation," Nucleic acids research, vol. 49, no. W1, pp. W293–W296, 2021.
+
+***
+
+&nbsp;

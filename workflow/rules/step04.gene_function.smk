@@ -140,7 +140,7 @@ rule cog_plot:
 ## Upgrade the local NCBI Taxonomy database in ETE toolkit
 rule taxonomy_db_upgrade:
     input:
-        expand("results/04.gene_function/{sample}/eggnog-mapper/{sample}.emapper.annotations", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/04.gene_function/{sample}/eggnog-mapper/{sample}.emapper.annotations", wildcards)
     output:
         "results/workflow_signal/04.gene_function/taxonomy_db_upgrade.done"
     params:
@@ -243,13 +243,13 @@ rule rgi_run:
 ### Merge RGI results for all samples
 rule rgi_merge:
     input:
-        expand("results/04.gene_function/{sample}/CARD/rgi/{sample}.report.txt", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/04.gene_function/{sample}/CARD/rgi/{sample}.report.txt", wildcards)
     output:
         "results/04.gene_function/all_rgi_results.xls"
     params:
         input_dir = "results/04.gene_function",
         output_dir = "results/04.gene_function",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/04.gene_function/CARD/rgi_merge.log"
@@ -290,13 +290,13 @@ rule abricate_card_run:
 ### Merge Abricate (CARD) results for all samples
 rule abricate_card_merge:
     input:
-        expand("results/04.gene_function/{sample}/CARD/abricate/{sample}_abricate_card_results.xls", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/04.gene_function/{sample}/CARD/abricate/{sample}_abricate_card_results.xls", wildcards)
     output:
         "results/04.gene_function/all_abricate_card_results.xls"
     params:
         input_dir = "results/04.gene_function",
         output_dir = "results/04.gene_function",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/04.gene_function/CARD/abricate_card_merge.log"
@@ -348,6 +348,50 @@ rule extract_card_matrix:
         python {params.script} {input} {params.card_aro_index} {output.matrix} {output.aro_info} {output.binary_matrix} > {log} 2>&1
         """
 
+## 2.1.5 Estimate carbapenemase-encoding gene copy number
+## Run ccne only when short-read data is available
+if config["seqdata_source"] == 0 or config["seqdata_source"] == 2:
+    rule ccne:
+        input:
+            # AMR genes to be tested
+            aro_info = "results/04.gene_function/card_aro_info.xls",
+            matrix = "results/04.gene_function/all_card_results_matrix.xls",
+        output:
+            "results/04.gene_function/all_ccne_results.xls"
+        params:
+            ccne_amr_list = config["ccne_amr_list"],
+            script = config["script_run_ccne"],
+            data_dir = "results/01.data_clean/short_read/cleandata",
+            fasta_dir = "results/02.assembly"
+        log:
+            "logs/04.gene_function/CARD/ccne.log"
+        conda:
+            "../envs/ccne.yaml"
+        threads:
+            64
+        shell:
+            """
+            # create input file for ccne
+            rm -rf results/04.gene_function/ccne 2> {log}
+            mkdir -p results/04.gene_function/ccne 2>> {log}
+            touch results/04.gene_function/ccne/input.list 2>> {log}
+            sample_list=$(cat {input.matrix} | awk '{{print $1}}' | sed '1d')
+            data_dir=$(realpath {params.data_dir})
+            fasta_dir=$(realpath {params.fasta_dir})
+            for s in $sample_list
+            do
+              echo "${{s}}\t${{data_dir}}/${{s}}_1.clean.fastq.gz\t${{data_dir}}/${{s}}_2.clean.fastq.gz\t${{fasta_dir}}/${{s}}/unicycler/assembly.fasta" >> results/04.gene_function/ccne/input.list 2>> {log}
+            done
+            
+            # run ccne
+            python {params.script} {params.ccne_amr_list} {input.aro_info} results/04.gene_function/ccne/input.list \
+            results/04.gene_function/ccne {threads} {output} >> {log} 2>&1
+            
+            # remove tmp files
+            rm -rf results/04.gene_function/ccne/tmp 2>> {log}
+            rm -f results/04.gene_function/ccne/input.list 2>> {log}
+            """
+
 # 2.2 Virulence factors (VF)
 ## Blast + VFDB: Search and annotate virulence genes
 ### The virulence factor database (VFDB) is an integrated and comprehensive online resource
@@ -385,13 +429,13 @@ rule vfdb_annotate:
 ## merge VFDB annotation results for all samples
 rule vfdb_merge:
     input:
-        expand("results/04.gene_function/{sample}/VFDB/{sample}_vfdb_blastn_onGenes.txt", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/04.gene_function/{sample}/VFDB/{sample}_vfdb_blastn_onGenes.txt", wildcards)
     output:
         "results/04.gene_function/all_vfdb_results.xls"
     params:
         input_dir = "results/04.gene_function",
         output_dir = "results/04.gene_function",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/04.gene_function/VFDB/vfdb_merge.log"

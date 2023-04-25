@@ -139,13 +139,13 @@ if ASSEMBLY_STRATEGY == "hybrid":
     ### Merge PLSDB annotation results for all samples
     rule plsdb_merge:
         input:
-            expand("results/03.genome_component/{sample}/plsdb/plsdb_meta.done", sample=SAMPLES)
+            lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/plsdb/plsdb_meta.done", wildcards)
         output:
             "results/03.genome_component/all_plsdb_results.xls"
         params:
             indir = "results/03.genome_component",
             outdir = "results/03.genome_component",
-            sample_list = config["sample_list"],
+            sample_list = SAMPLE_LIST_UPDATE,
             script = config["merge_results_script"]
         log:
             "logs/03.genome_component/plsdb/plsdb_merge.log"
@@ -164,14 +164,13 @@ if ASSEMBLY_STRATEGY == "hybrid":
             result = "results/03.genome_component/{sample}/mob-suite/{sample}_mobtyper_result.xls"
         params:
             outdir = "results/03.genome_component/{sample}/mob-suite",
-            # MOB-suite database
-            db = config["mob_suite_database"]
         log:
             "logs/03.genome_component/mob-suite/mob_suite_run/{sample}.log"
         threads:
             config["threads"]
         conda:
-            "../envs/mob-suite.yaml"
+            #"../envs/mob-suite.yaml"
+            "mob_suite"
         shell:
             """
             # Run MOB-suite on each plasmid fasta of each sample
@@ -180,7 +179,7 @@ if ASSEMBLY_STRATEGY == "hybrid":
             do
               plas_num=`basename $f .fasta`
               mob_typer --infile $f --out_file {params.outdir}/{wildcards.sample}_${{plas_num}}_mobtyper_result.xls \
-              -d {params.db} --num_threads {threads} >> {log} 2>&1
+              --num_threads {threads} >> {log} 2>&1
             done
             
             # Merge all MOB-suite results for each sample
@@ -213,13 +212,13 @@ if ASSEMBLY_STRATEGY == "hybrid":
     ### Merge MOB-suite results for all samples
     rule mob_suite_merge:
         input:
-            expand("results/03.genome_component/{sample}/mob-suite/{sample}_mobtyper_result.xls", sample=SAMPLES)
+            lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/mob-suite/{sample}_mobtyper_result.xls", wildcards)
         output:
             "results/03.genome_component/all_mob-suite_results.xls"
         params:
             indir = "results/03.genome_component",
             outdir = "results/03.genome_component",
-            sample_list = config["sample_list"],
+            sample_list = SAMPLE_LIST_UPDATE,
             script = config["merge_results_script"]
         log:
             "logs/03.genome_component/mob-suite/mob_suite_merge.log"
@@ -262,13 +261,13 @@ elif ASSEMBLY_STRATEGY == "short":
     rule plasmidfinder_merge:
         input:
             # Plasmidfinder results
-            expand("results/03.genome_component/{sample}/plasmidfinder/results_tab.tsv", sample=SAMPLES)
+            lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/plasmidfinder/results_tab.tsv",wildcards),
         output:
             "results/03.genome_component/all_plasmidfinder_results.xls"
         params:
             input_dir = "results/03.genome_component",
             output_dir = "results/03.genome_component",
-            sample_list = config["sample_list"],
+            sample_list = SAMPLE_LIST_UPDATE,
             script = config["merge_results_script"]
         log:
             "logs/03.genome_component/plasmidfinder/plasmidfinder_merge.log"
@@ -305,13 +304,13 @@ elif ASSEMBLY_STRATEGY == "short":
     rule platon_merge:
         input:
             # Platon results
-            expand("results/03.genome_component/{sample}/platon/{sample}.tsv", sample=SAMPLES)
+            lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/platon/{sample}.tsv", wildcards),
         output:
             "results/03.genome_component/all_platon_results.xls"
         params:
             input_dir = "results/03.genome_component",
             output_dir = "results/03.genome_component",
-            sample_list = config["sample_list"],
+            sample_list = SAMPLE_LIST_UPDATE,
             script = config["merge_results_script"]
         log:
             "logs/03.genome_component/platon/platon_merge.log"
@@ -355,13 +354,13 @@ elif ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRATEGY == "skip":
     rule plasmidfinder_merge:
         input:
             # Plasmidfinder results
-            expand("results/03.genome_component/{sample}/plasmidfinder/results_tab.tsv", sample=SAMPLES)
+            lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/plasmidfinder/results_tab.tsv",wildcards),
         output:
             "results/03.genome_component/all_plasmidfinder_results.xls"
         params:
             input_dir = "results/03.genome_component",
             output_dir = "results/03.genome_component",
-            sample_list = config["sample_list"],
+            sample_list = SAMPLE_LIST_UPDATE,
             script = config["merge_results_script"]
         log:
             "logs/03.genome_component/plasmidfinder/plasmidfinder_merge.log"
@@ -391,13 +390,13 @@ rule phigaro_run:
 ## Merge Phigaro results for all samples
 rule phigaro_merge:
     input:
-        expand("results/03.genome_component/{sample}/phigaro/{sample}.phigaro.tsv", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/phigaro/{sample}.phigaro.tsv", wildcards)
     output:
         "results/03.genome_component/all_phigaro_results.xls"
     params:
         indir = "results/03.genome_component",
         outdir = "results/03.genome_component",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/03.genome_component/phigaro/phigaro_merge.log"
@@ -411,7 +410,7 @@ rule phigaro_merge:
 ### Setup ICEfinder working environment
 rule icefinder_setup:
     input:
-        expand("results/03.genome_component/{sample}/prokka/{sample}.gbk", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/prokka/{sample}.gbk", wildcards)
     output:
         # signal file to indicate the end of ICEfinder environment setup
         "results/workflow_signal/03.genome_component/icefinder_setup.done"
@@ -494,13 +493,13 @@ rule icefinder_run:
 rule icefinder_merge:
     input:
         # prediction of ICE and IME in genome sequences of bacteria by ICEfinder for each sample
-        expand("results/03.genome_component/{sample}/icefinder/{sample}_icefinder_result.txt", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/icefinder/{sample}_icefinder_result.txt", wildcards),
     output:
         "results/03.genome_component/all_icefinder_results.xls"
     params:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/03.genome_component/icefinder/icefinder_merge.log"
@@ -552,13 +551,13 @@ rule digis_run:
 rule digis_merge:
     input:
         # digIS results
-        expand("results/03.genome_component/{sample}/digis/results/{sample}.csv", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/digis/results/{sample}.csv", wildcards)
     output:
         "results/03.genome_component/all_digis_results.xls"
     params:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/03.genome_component/digis/digis_merge.log"
@@ -570,7 +569,7 @@ rule digis_merge:
 # 2.5 Genomic islands (GIs)
 ## IslandPath-DIMOB: Prediction and visualization of genomic islands
 ### Note: IslandPath-DIMOB ONLY works with single contig inputs
-### Thus use a custom script (from https://github.com/fmalmeida/bacannot) to split GBK file generated by Prokka
+### Thus use a custom script to split GBK file generated by Prokka
 ### Run IslandPath-DIMOB
 rule islandpath_run:
     input:
@@ -582,7 +581,7 @@ rule islandpath_run:
     params:
         workdir = WORKDIR,
         outdir = "results/03.genome_component/{sample}/islandpath",
-        # script to split genbank files (from https://github.com/fmalmeida/bacannot)
+        # script to split genbank files
         splitgenbank_script = config["splitgenbank_script"]
     log:
         "logs/03.genome_component/islandpath/islandpath_run/{sample}.log"
@@ -617,13 +616,13 @@ rule islandpath_run:
 rule islandpath_merge:
     input:
         # IslandPath-DIMOB results
-        expand("results/03.genome_component/{sample}/islandpath/{sample}_GIs.bed", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/islandpath/{sample}_GIs.bed", wildcards)
     output:
         "results/03.genome_component/all_islandpath_results.xls"
     params:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/03.genome_component/islandpath/islandpath_merge.log"
@@ -657,13 +656,13 @@ rule cctyper:
 ### Merge CRISPRCasTyper results for all samples
 rule cctyper_merge:
     input:
-        expand("results/03.genome_component/{sample}/cctyper/cctyper.done", sample=SAMPLES)
+        lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/cctyper/cctyper.done", wildcards)
     output:
         "results/03.genome_component/all_cctyper_results.xls"
     params:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
-        sample_list = config["sample_list"],
+        sample_list = SAMPLE_LIST_UPDATE,
         script = config["merge_results_script"]
     log:
         "logs/03.genome_component/cctyper/cctyper_merge.log"

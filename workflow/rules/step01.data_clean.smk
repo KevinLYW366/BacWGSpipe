@@ -32,7 +32,7 @@ rule fastp:
 ## Extract fastp QC statistics
 rule fastp_stats:
     input:
-        expand("results/01.data_clean/short_read/{sample}/fastp/{sample}_fastp.json", sample=SAMPLES)
+        expand("results/01.data_clean/short_read/{sample}/fastp/{sample}_fastp.json",sample=SAMPLES)
     output:
         "results/01.data_clean/short_read/all_fastp_stats.xls"
     params:
@@ -130,28 +130,60 @@ rule bracken_filter:
         """
 
 # 2.4 Merge all sample's Kraken2 results
-rule kraken2_qc:
-    input:
-        expand("results/01.data_clean/short_read/{sample}/{sample}.kraken2.result.xls", sample=SAMPLES)
-    output:
-        qc_result = "results/01.data_clean/short_read/all_kraken2_result.xls"
-    params:
-        qc_threshold = config["kraken2_threshold"],
-        genus = config["genus"],
-        species = config["species"]
-    log:
-        "logs/01.data_clean/short_read/kraken2_qc.log"
-    shell:
-        """
-        # Generate kraken qc result output
-        echo -e "##The percentage of reads mapping to {params.genus} {params.species} and the main species detected by kraken" > {output.qc_result} 2> {log}
-        echo -e "#sample\tpercentage_target\tmain_species_detected\tpercentage_main_species" >> {output.qc_result} 2>> {log}
-        cat {input} | grep -v "^#" >> {output.qc_result} 2>> {log}
+## Use checkpoint to turn on the feature which would prevent samples
+##   failing kraken qc from running the rest of the workflow
+## If feature "kraken_filter" is turned on in config file,
+##   output an additional sample list of all qualifiled samples
+if config["kraken2_filter"]:
+    checkpoint kraken2_qc:
+        input:
+            expand("results/01.data_clean/short_read/{sample}/{sample}.kraken2.result.xls", sample=SAMPLES)
+        output:
+            qc_result = "results/01.data_clean/short_read/all_kraken2_result.xls",
+            pass_sample_list = "results/01.data_clean/short_read/all.kraken2.pass.list"
+        params:
+            qc_threshold = config["kraken2_threshold"],
+            genus = config["genus"],
+            species = config["species"]
+        log:
+            "logs/01.data_clean/short_read/kraken2_qc.log"
+        shell:
+            """
+            # Generate kraken qc result output
+            echo -e "##The percentage of reads mapping to {params.genus} {params.species} and the main species detected by kraken2" > {output.qc_result} 2> {log}
+            echo -e "#sample\tpercentage_target\tmain_species_detected\tpercentage_main_species" >> {output.qc_result} 2>> {log}
+            cat {input} | grep -v "^#" >> {output.qc_result} 2>> {log}
+            
+            # extract qualified sample list
+            TMP=`head -n 2 {output.qc_result} && grep -v "^#" {output.qc_result} | sort -k2n` 2>> {log}
+            echo "$TMP" > {output.qc_result} 2>> {log}
+            # Extract passing sample list from kraken qc result output
+            ## the braces used in awk have to be {{}} to distinguished from snakemake variable names
+            grep -v '^#' {output.qc_result} | awk -F '\t' '$2 >= {params.qc_threshold} {{print $1}}' | sort -k1 > {output.pass_sample_list} 2>> {log}
+            """
+else:
+    checkpoint kraken2_qc:
+        input:
+            expand("results/01.data_clean/short_read/{sample}/{sample}.kraken2.result.xls",sample=SAMPLES)
+        output:
+            qc_result = "results/01.data_clean/short_read/all_kraken2_result.xls"
+        params:
+            qc_threshold = config["kraken2_threshold"],
+            genus = config["genus"],
+            species = config["species"]
+        log:
+            "logs/01.data_clean/short_read/kraken2_qc.log"
+        shell:
+            """
+            # Generate kraken qc result output
+            echo -e "##The percentage of reads mapping to {params.genus} {params.species} and the main species detected by kraken" > {output.qc_result} 2> {log}
+            echo -e "#sample\tpercentage_target\tmain_species_detected\tpercentage_main_species" >> {output.qc_result} 2>> {log}
+            cat {input} | grep -v "^#" >> {output.qc_result} 2>> {log}
 
-        # extract qualified sample list
-        TMP=`head -n 2 {output.qc_result} && grep -v "^#" {output.qc_result} | sort -k2n` 2>> {log}
-        echo "$TMP" > {output.qc_result} 2>> {log}
-        """
+            # extract qualified sample list
+            TMP=`head -n 2 {output.qc_result} && grep -v "^#" {output.qc_result} | sort -k2n` 2>> {log}
+            echo "$TMP" > {output.qc_result} 2>> {log}
+            """
 
 ##### 3. FASTQ reads quality control #####
 # 3.1 Illumina short reads QC (FastQC & MultiQC)
