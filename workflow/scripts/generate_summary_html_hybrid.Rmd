@@ -609,7 +609,7 @@ plsdb_results_df <- read.table(
   select(Sample_ID, Plasmid_ID, Query_length, Plasmid_accession, Length_NUCCORE, 
          Shared_hashes, P.value, Identity, Description) %>%
   mutate(P.value = round(P.value, 1)) %>%
-  group_by(Sample_ID) %>%
+  group_by(Sample_ID, Plasmid_ID) %>%
   slice(1:5)
 
 datatable(

@@ -9,8 +9,14 @@ plsdb_meta_file = sys.argv[2]
 output_file = sys.argv[3]
 fasta_file = sys.argv[4]
 
-sample = os.path.basename(mash_result_file).split("_")[0]
-plas = os.path.basename(mash_result_file).split("_")[1]
+sample_name = []
+for part in os.path.basename(mash_result_file).split("_"):
+    if not part.startswith("plas"):
+        sample_name.append(part)
+    else:
+        plas = part
+        break
+sample = "_".join(sample_name)
 with open(fasta_file, 'r') as f:
     first_line = f.readline()
     query_len = first_line.strip().split(" ")[1].replace("length=", "")
