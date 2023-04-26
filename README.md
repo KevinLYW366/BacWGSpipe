@@ -93,7 +93,7 @@ BacWGSpipe supports three types of WGS data sources:
     # Install snakemake using mamba
     mamba create -c conda-forge -c bioconda -n snakemake snakemake
     ```
-4. Running the workflow:
+4. Run the workflow:
 
     ```bash
     # Move to the directory of BacWGSpipe
