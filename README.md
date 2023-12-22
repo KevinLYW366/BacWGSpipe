@@ -81,7 +81,7 @@ Snakemake uses Singularity to download and load the docker images (defined in "I
     bash BacWGSpipe.sh --configfile config/config.yaml -r -p --cores 32 --singularity-args "-B /lvdata/lyw:/lvdata/lyw" -n 
     ```
 
-# Test dataset
+## Test dataset
 
 V. Murigneux et al., “MicroPIPE: Validating an end-to-end workflow for high-quality complete bacterial genome construction,” BMC genomics, vol. 22, no. 1, p. 474, 2021.
 
