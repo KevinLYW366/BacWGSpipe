@@ -10,3 +10,4 @@ docker/
 .parallel/
 singularity/
 test_data
+workflow/envs/

@@ -1,9 +1,0 @@
-name: data_clean
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - filtlong=0.2.1=h9a82719_0
-  - fastp=0.23.2=h79da9fb_0
-channel_priority: flexible

@@ -1,8 +1,0 @@
-name: ete3
-channels:
-  - etetoolkit
-  - bioconda
-dependencies:
-  - ete3=3.1.2=pyh39e3cac_0
-  - ete_toolchain=3.0.0=h73706c9_0
-  - pandas=1.1.5=py36h284efc9_0

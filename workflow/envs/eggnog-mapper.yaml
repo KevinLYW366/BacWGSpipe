@@ -1,8 +1,0 @@
-name: eggnog-mapper
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - eggnog-mapper=2.1.9=pyhdfd78af_0
-channel_priority: flexible

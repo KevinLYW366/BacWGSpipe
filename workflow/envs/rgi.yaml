@@ -1,8 +1,0 @@
-name: rgi
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - rgi=5.2.1=pyhdfd78af_1
-channel_priority: flexible

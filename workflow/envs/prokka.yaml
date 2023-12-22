@@ -1,8 +1,0 @@
-name: prokka
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - prokka=1.14.6=pl5262hdfd78af_1
-channel_priority: flexible

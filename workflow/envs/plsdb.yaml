@@ -1,9 +1,0 @@
-name: plsdb
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - mash=2.3=ha9a2dd8_3
-  - pandas=1.5.1=py311h8b32b4d_1
-channel_priority: flexible

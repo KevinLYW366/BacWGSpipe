@@ -1,9 +1,0 @@
-name: kraken2
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - kraken2=2.1.2=pl5262h7d875b9_0
-  - bracken=2.6.2=py39hc16433a_0
-channel_priority: flexible

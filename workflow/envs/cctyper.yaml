@@ -1,8 +1,0 @@
-name: cctyper
-channels:
-  - russel88
-  - bioconda
-  - conda-forge
-dependencies:
-  - cctyper=1.6.4=py38_0
-channel_priority: flexible

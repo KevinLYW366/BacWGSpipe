@@ -1,8 +1,0 @@
-name: platon
-channels:
-  - bioconda
-  - conda-forge
-  - defaults
-dependencies:
-  - platon=1.6=pyhdfd78af_1
-channel_priority: flexible
