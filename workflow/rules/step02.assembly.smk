@@ -19,15 +19,15 @@ if ASSEMBLY_STRATEGY == "hybrid":
             assembly = "results/02.assembly/{sample}/unicycler/assembly.fasta"
         params:
             outdir = "results/02.assembly/{sample}/unicycler",
-            # Path to the SPAdes 3.15.4 executable since in unicycler 0.5.0 conda env
+            # Path to the SPAdes 3.15.4 executable in container since in unicycler 0.5.0 conda env
             #   SPAdes version is 3.15.3 which is not compatible with Python 3.10.0
-            spades = config["spades_path"]
+            spades = "/opt/BacWGSpipe/tools/SPAdes-3.15.4-Linux/bin/spades.py"
         log:
             "logs/02.assembly/unicycler/{sample}.log"
         threads:
             config["threads"]
         conda:
-            "../envs/assembly.yaml"
+            "assembly"
         shell:
             """
             unicycler -1 {input.short_fq1} -2 {input.short_fq2} -l {input.long_fq} \
@@ -48,7 +48,7 @@ elif ASSEMBLY_STRATEGY == "long":
         threads:
             config["threads"]
         conda:
-            "../envs/assembly.yaml"
+            "assembly"
         shell:
             """
             unicycler -l {input.long_fq} -o {params.outdir} -t {threads} > {log} 2>&1
@@ -65,13 +65,13 @@ elif ASSEMBLY_STRATEGY == "short":
             outdir = "results/02.assembly/{sample}/unicycler",
             # Path to the SPAdes 3.15.4 executable since in unicycler 0.5.0 conda env
             #   SPAdes version is 3.15.3 which is not compatible with Python 3.10.0
-            spades = config["spades_path"]
+            spades = "/opt/BacWGSpipe/tools/SPAdes-3.15.4-Linux/bin/spades.py"
         log:
             "logs/02.assembly/unicycler/{sample}.log"
         threads:
             config["threads"]
         conda:
-            "../envs/assembly.yaml"
+            "assembly"
         shell:
             """
             unicycler -1 {input.short_fq1} -2 {input.short_fq2} \
@@ -89,37 +89,18 @@ if ASSEMBLY_STRATEGY == "hybrid":
             "results/02.assembly/{sample}/viralverify/assembly_result_table.csv"
         params:
             outdir = "results/02.assembly/{sample}/viralverify/",
-            # Path to viralVerify HMM database
-            hmm = config["viralverify_hmm_path"]
+            # Path to viralVerify HMM database in container
+            hmm = "/opt/BacWGSpipe/database/viralVerify_HMMs/nbc_hmms.hmm"
         log:
             "logs/02.assembly/viralverify/{sample}.log"
         threads:
             config["threads"]
         conda:
-            "../envs/assembly.yaml"
+            "assembly"
         shell:
             """
             viralverify -f {input} -o {params.outdir} --hmm {params.hmm} -t {threads} > {log} 2>&1
             """
-
-    # # 2.1 Identify plasmid contig in genome assembly using MOB-recon
-    # rule mob_recon:
-    #     input:
-    #         "results/02.assembly/{sample}/unicycler/assembly.fasta"
-    #     output:
-    #         "results/02.assembly/{sample}/mob_recon/contig_report.txt"
-    #     params:
-    #         outdir = "results/02.assembly/{sample}/mob_recon"
-    #     log:
-    #         "logs/02.assembly/mob_recon/{sample}.log"
-    #     threads:
-    #         config["threads"]
-    #     conda:
-    #         "../envs/mob-suite.yaml"
-    #     shell:
-    #         """
-    #         mob_recon -i {input} -o {params.outdir} -n {threads} --force > {log} 2>&1
-    #         """
 
     # 2.2 Separate assembly fasta into several fasta of chromosome and plasmid based on MOB-recon results
     rule separate_assembly:
@@ -131,11 +112,11 @@ if ASSEMBLY_STRATEGY == "hybrid":
             assembly_all = "results/02.assembly/{sample}/assembly/{sample}.fasta",
             flag = "results/02.assembly/{sample}/assembly/separate_assembly.done"
         params:
-            # Path to seqkit executable
-            seqkit = config["seqkit"],
+            # Path to seqkit executable in container
+            seqkit = "/opt/BacWGSpipe/tools/seqkit_v2.3.1/seqkit",
             outdir = "results/02.assembly/{sample}/assembly",
             # Python script to rename separated fasta files based on viralVerify results
-            script = config["script_rename_fasta"]
+            script = "workflow/scripts/rename_separated_fasta.py"
         log:
             "logs/02.assembly/separate_assembly/{sample}.log"
         threads:
@@ -168,12 +149,12 @@ if ASSEMBLY_STRATEGY == "hybrid":
             indir = "results/02.assembly",
             outdir = "results/02.assembly",
             # Python script to summarize genome assembly statistics
-            script = config["script_assembly_stats"]
+            script = "workflow/scripts/assembly_stats.py"
         log:
             "logs/02.assembly/assembly_stats.log"
         conda:
             # Conda env with biopython
-            "../envs/icefinder.yaml"
+            "qc"
         shell:
             """
             python {params.script} {params.sample_list} {params.indir} {params.outdir} hybrid > {log} 2>&1
@@ -215,46 +196,24 @@ elif ASSEMBLY_STRATEGY == "skip":
 
 ##### 3. Genome assembly QC #####
 # 3.1 Quast: generate genome assembly quality control reports for each sample
-if config["ref_genome"] and config["ref_genome_gff"]:
-    rule quast:
-        input:
-            flag = "results/02.assembly/{sample}/assembly/separate_assembly.done",
-            assembly = "results/02.assembly/{sample}/assembly/{sample}.fasta"
-        output:
-            "results/02.assembly/quast/{sample}/report.html"
-        log:
-            "logs/02.assembly/quast/{sample}.log"
-        params:
-            outdir = "results/02.assembly/quast/{sample}",
-            ref_fna = config["ref_genome"],
-            ref_gff = config["ref_genome_gff"]
-        threads:
-            config["threads"]
-        conda:
-            "../envs/qc.yaml"
-        shell:
-            """
-            quast -o {params.outdir} -r {params.ref_fna} -g {params.ref_gff} -t {threads} {input.assembly} > {log} 2>&1
-            """
-else:
-    rule quast:
-        input:
-            flag="results/02.assembly/{sample}/assembly/separate_assembly.done",
-            assembly="results/02.assembly/{sample}/assembly/{sample}.fasta"
-        output:
-            "results/02.assembly/quast/{sample}/report.html"
-        log:
-            "logs/02.assembly/quast/{sample}.log"
-        params:
-            outdir="results/02.assembly/quast/{sample}"
-        threads:
-            config["threads"]
-        conda:
-            "../envs/qc.yaml"
-        shell:
-            """
-            quast -o {params.outdir} -t {threads} {input.assembly} > {log} 2>&1
-            """
+rule quast:
+    input:
+        flag = "results/02.assembly/{sample}/assembly/separate_assembly.done",
+        assembly = "results/02.assembly/{sample}/assembly/{sample}.fasta"
+    output:
+        "results/02.assembly/quast/{sample}/report.html"
+    log:
+        "logs/02.assembly/quast/{sample}.log"
+    params:
+        outdir="results/02.assembly/quast/{sample}"
+    threads:
+        config["threads"]
+    conda:
+        "qc"
+    shell:
+        """
+        quast -o {params.outdir} -t {threads} {input.assembly} > {log} 2>&1
+        """
 
 if ASSEMBLY_STRATEGY == "short" or ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRATEGY == "skip":
     # Summarize genome assembly statistics to be presented in summary report
@@ -268,12 +227,12 @@ if ASSEMBLY_STRATEGY == "short" or ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRAT
                 indir = "results/02.assembly",
                 outdir = "results/02.assembly",
                 # Python script to summarize genome assembly statistics
-                script = config["script_assembly_stats"]
+                script = "workflow/scripts/assembly_stats.py"
             log:
                 "logs/02.assembly/assembly_stats.log"
             conda:
                 # Conda env with biopython
-                "../envs/icefinder.yaml"
+                "qc"
             shell:
                 """
                 python {params.script} {params.sample_list} {params.indir} {params.outdir} short > {log} 2>&1
@@ -291,7 +250,7 @@ rule multiqc_quast:
     log:
         "logs/02.assembly/multiqc.log"
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         "multiqc {params.indir} -m quast -f -o {params.outdir} > {log} 2>&1"
 

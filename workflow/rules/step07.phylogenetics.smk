@@ -27,7 +27,7 @@ if len(SAMPLES) > 1:
         threads:
             64
         conda:
-            "../envs/roary.yaml"
+            "phylogenetics"
         shell:
             """
             # remove the folder automatically created by Snakemake 
@@ -51,7 +51,7 @@ if len(SAMPLES) > 1:
         threads:
             64
         conda:
-            "../envs/iqtree.yaml"
+            "phylogenetics"
         shell:
             """
             iqtree -s {input} -T {threads} -B 1000 -m TEST --prefix {params.prefix} --redo > {log} 2>&1
@@ -76,7 +76,8 @@ if len(SAMPLES) > 1:
             # MLST annotation
             mlst = "results/07.phylogenetics/itol/mlst.binary.itol.txt"
         params:
-            script = config["script_itol_annotation"]
+            # Script to generate itol annotation files
+            script = "workflow/scripts/generate_itol_annotation.py"
         log:
             "logs/07.phylogenetics/itol.log"
         shell:

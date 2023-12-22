@@ -2,6 +2,11 @@ logs*/
 results*/
 data/
 .snakemake/
-resources/*
-!resources/*.zip
 config/config_*.yaml
+.cache/
+.config/
+docker/
+.java/
+.parallel/
+singularity/
+test_data

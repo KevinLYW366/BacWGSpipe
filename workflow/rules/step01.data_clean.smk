@@ -21,7 +21,7 @@ rule fastp:
     log:
         "logs/01.data_clean/short_read/fastp/{sample}.log"
     conda:
-        "../envs/data_clean.yaml"
+        "data_clean"
     shell:
         """
         fastp --detect_adapter_for_pe -w {threads} -i {input.fq1} -I {input.fq2} \
@@ -38,7 +38,7 @@ rule fastp_stats:
     params:
         input_dir = "results/01.data_clean/short_read/",
         sample_list = config["sample_list"],
-        script = config["script_extract_fastp_stats"]
+        script = "workflow/scripts/extract_fastp_stats.py"
     log:
         "logs/01.data_clean/short_read/fastp_stats.log"
     shell:
@@ -57,7 +57,7 @@ rule filtlong:
     log:
         "logs/01.data_clean/long_read/filtlong/{sample}.log"
     conda:
-        "../envs/data_clean.yaml"
+        "data_clean"
     shell:
         """
         (filtlong --min_length 1000 --keep_percent 95 {input} | gzip) > {output} 2> {log}
@@ -74,7 +74,7 @@ rule kraken2:
     log:
         "logs/01.data_clean/short_read/kraken2/{sample}.log"
     conda:
-        "../envs/kraken2.yaml"
+        "alignment_search"
     threads:
         config["threads"]
     params:
@@ -95,7 +95,7 @@ rule bracken:
     log:
         "logs/01.data_clean/short_read/bracken/{sample}.log"
     conda:
-        "../envs/kraken2.yaml"
+        "alignment_search"
     threads:
         config["threads"]
     params:
@@ -119,7 +119,7 @@ rule bracken_filter:
     log:
         "logs/01.data_clean/short_read/bracken_filter/{sample}.log"
     params:
-        script =  config["script_extract_bracken"],
+        script =  "workflow/scripts/bracken_report_extract.py",
         genus = config["genus"],
         species = config["species"]
     shell:
@@ -206,7 +206,7 @@ rule fastqc:
     threads:
         config["threads"]
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         """
         # run fastqc
@@ -230,7 +230,7 @@ rule multiqc_fastqc:
         indir = "results/01.data_clean/short_read/fastqc",
         outdir = "results/01.data_clean/short_read/multiqc/"
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         """
         multiqc {params.indir} -m fastqc -f -o {params.outdir} > {log} 2>&1
@@ -248,7 +248,7 @@ rule nanostat_raw:
     threads:
         config["threads"]
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         """
         NanoStat --fastq {input} -n {output} -t {threads} > {log} 2>&1
@@ -267,7 +267,7 @@ rule merge_nanostat_raw:
         indir = "results/00.rawdata/long_read/nanostat_raw",
         outdir = "results/00.rawdata/long_read",
         # Python script to extract info from NanoStat results and merge
-        script = config["merge_nanostat_script"]
+        script = "workflow/scripts/merge_nanostat_results.py"
     shell:
         """
         python {params.script} {params.sample_list} {params.indir} {params.outdir} raw > {log} 2>&1
@@ -285,12 +285,13 @@ rule multiqc_nanostat_raw:
         indir = "results/00.rawdata/long_read/nanostat_raw",
         outdir = "results/00.rawdata/long_read/multiqc_raw/"
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         """
         multiqc {params.indir} -m nanostat -f -o {params.outdir} > {log} 2>&1
         """
 
+'''
 ## Generate a quality control report of Nanopore long fastq clean reads for each sample by NanoPlot
 rule nanoplot_clean:
     input:
@@ -305,12 +306,13 @@ rule nanoplot_clean:
     threads:
         config["threads"]
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         """
         NanoPlot -t {threads} -o {params.outdir} -p {params.prefix} --tsv_stats --title {wildcards.sample} \
-        -f png --fastq {input} --loglength --N50 --verbose > {log} 2>&1
+        -f png --fastq {input} --loglength --N50 --no_static --verbose > {log} 2>&1
         """
+'''
 
 ## Generate a quality control report of Nanopore long fastq clean reads for each sample by NanoStat (supported by MultiQC)
 rule nanostat_clean:
@@ -323,7 +325,7 @@ rule nanostat_clean:
     threads:
         config["threads"]
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         """
         NanoStat --fastq {input} -n {output} -t {threads} > {log} 2>&1
@@ -342,7 +344,7 @@ rule merge_nanostat_clean:
         indir = "results/01.data_clean/long_read/nanostat_clean",
         outdir = "results/01.data_clean/long_read",
         # Python script to extract info from NanoStat results and merge
-        script = config["merge_nanostat_script"]
+        script = "workflow/scripts/merge_nanostat_results.py"
     shell:
         """
         python {params.script} {params.sample_list} {params.indir} {params.outdir} clean > {log} 2>&1
@@ -360,7 +362,7 @@ rule multiqc_nanostat_clean:
         indir = "results/01.data_clean/long_read/nanostat_clean",
         outdir = "results/01.data_clean/long_read/multiqc_clean/"
     conda:
-        "../envs/qc.yaml"
+        "qc"
     shell:
         """
         multiqc {params.indir} -m nanostat -f -o {params.outdir} > {log} 2>&1

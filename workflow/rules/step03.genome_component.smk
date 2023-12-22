@@ -28,7 +28,7 @@ rule prokka:
     threads:
         config["threads"]
     conda:
-        "../envs/prokka.yaml"
+        "genome_component"
     shell:
         """
         # Format date information in gbk file in English
@@ -48,12 +48,11 @@ rule plot_gene_length:
     params:
         outdir = "results/03.genome_component/{sample}/prokka",
         # R script to plot gene length distribution
-        script = config["script_plot_gene_length"]
+        script = "workflow/scripts/plot_gene_length.R"
     log:
         "logs/03.genome_component/prokka/plot_gene_length/{sample}.log"
     conda:
-        # Conda env R ggplot2
-        "../envs/R_plot.yaml"
+        "R"
     shell:
         """
         Rscript {params.script} {input} {params.outdir} {wildcards.sample} > {log} 2>&1
@@ -72,7 +71,7 @@ if ASSEMBLY_STRATEGY == "hybrid":
         params:
             outdir = "results/03.genome_component/{sample}/plsdb",
             # PLSDB Mash sketches file
-            db = config["plsdb_mash_sketches"],
+            db = "/opt/PLSDB/database/plsdb.msh",
             # Maximal p-value to report in Mash screen
             max_pvalue = config["plsdb_max_pvalue"],
             # Minimal identity in Mash screen in Mash screen
@@ -81,8 +80,10 @@ if ASSEMBLY_STRATEGY == "hybrid":
             "logs/03.genome_component/plsdb/plsdb_screen/{sample}.log"
         threads:
             config["threads"]
+        singularity:
+            config["image_plsdb"]
         conda:
-            "../envs/plsdb.yaml"
+            "plsdb"
         shell:
             """
             # Screen PLSDB on each plasmid fasta of each sample
@@ -94,7 +95,6 @@ if ASSEMBLY_STRATEGY == "hybrid":
               # Run mash screen
               mash screen {params.db} $f -v {params.max_pvalue} -i {params.min_ident} \
               -p {threads} > {params.outdir}/{wildcards.sample}_${{plas_num}}_plsdb_result.xls.tmp 2> {log}
-              
             done
             
             # Create a flag file when everything done
@@ -110,11 +110,15 @@ if ASSEMBLY_STRATEGY == "hybrid":
         params:
             outdir = "results/03.genome_component/{sample}/plsdb",
             # Python script to extract matched plasmid info from PLSDB meta archive
-            script = config["plsdb_script_meta"],
+            script = "workflow/scripts/extract_plsdb_meta.py",
             # Python script to extract matched plasmid info from PLSDB meta archive
-            meta = config["plsdb_meta_archive"]
+            meta = "/opt/PLSDB/database/plsdb.tsv"
         log:
             "logs/03.genome_component/plsdb/plsdb_meta/{sample}.log"
+        singularity:
+            config["image_plsdb"]
+        conda:
+            "plsdb"
         shell:
             """
             shopt -s nullglob
@@ -146,7 +150,7 @@ if ASSEMBLY_STRATEGY == "hybrid":
             indir = "results/03.genome_component",
             outdir = "results/03.genome_component",
             sample_list = SAMPLE_LIST_UPDATE,
-            script = config["merge_results_script"]
+            script = "workflow/scripts/merge_results.py"
         log:
             "logs/03.genome_component/plsdb/plsdb_merge.log"
         shell:
@@ -168,9 +172,8 @@ if ASSEMBLY_STRATEGY == "hybrid":
             "logs/03.genome_component/mob-suite/mob_suite_run/{sample}.log"
         threads:
             config["threads"]
-        conda:
-            #"../envs/mob-suite.yaml"
-            "mob_suite"
+        singularity:
+            config["image_mob_suite"]
         shell:
             """
             # Run MOB-suite on each plasmid fasta of each sample
@@ -219,7 +222,7 @@ if ASSEMBLY_STRATEGY == "hybrid":
             indir = "results/03.genome_component",
             outdir = "results/03.genome_component",
             sample_list = SAMPLE_LIST_UPDATE,
-            script = config["merge_results_script"]
+            script = "workflow/scripts/merge_results.py"
         log:
             "logs/03.genome_component/mob-suite/mob_suite_merge.log"
         shell:
@@ -238,8 +241,6 @@ elif ASSEMBLY_STRATEGY == "short":
             "results/03.genome_component/{sample}/plasmidfinder/results_tab.tsv"
         params:
             outdir = "results/03.genome_component/{sample}/plasmidfinder",
-            # Plasmidfinder database
-            db = config["plasmidfinder_db"],
             # Plasmidfinder minimum coverage
             mincov = config["plasmidfinder_mincov"],
             # Plasmidfinder minimum hreshold for identity
@@ -247,10 +248,10 @@ elif ASSEMBLY_STRATEGY == "short":
         log:
             "logs/03.genome_component/plasmidfinder/plasmidfinder_run/{sample}.log"
         conda:
-            "../envs/plasmidfinder.yaml"
+            "genome_component"
         shell:
             """
-            plasmidfinder.py -i {input} -p {params.db} -o {params.outdir} \
+            plasmidfinder.py -i {input} -o {params.outdir} \
             -l {params.mincov} -t {params.minid} -x > {log} 2>&1
 
             # clean up tmp files
@@ -268,7 +269,7 @@ elif ASSEMBLY_STRATEGY == "short":
             input_dir = "results/03.genome_component",
             output_dir = "results/03.genome_component",
             sample_list = SAMPLE_LIST_UPDATE,
-            script = config["merge_results_script"]
+            script = "workflow/scripts/merge_results.py"
         log:
             "logs/03.genome_component/plasmidfinder/plasmidfinder_merge.log"
         shell:
@@ -288,13 +289,13 @@ elif ASSEMBLY_STRATEGY == "short":
         params:
             outdir = "results/03.genome_component/{sample}/platon",
             # Platon database
-            db = config["platon_db"],
+            db = "/opt/platon/db",
         log:
             "logs/03.genome_component/platon/platon_run/{sample}.log"
         threads:
             config["threads"]
-        conda:
-            "../envs/platon.yaml"
+        singularity:
+            config["image_platon"]
         shell:
             """
             platon --db {params.db} -o {params.outdir} -p {wildcards.sample} --threads {threads} {input} > {log} 2>&1
@@ -311,7 +312,7 @@ elif ASSEMBLY_STRATEGY == "short":
             input_dir = "results/03.genome_component",
             output_dir = "results/03.genome_component",
             sample_list = SAMPLE_LIST_UPDATE,
-            script = config["merge_results_script"]
+            script = "workflow/scripts/merge_results.py"
         log:
             "logs/03.genome_component/platon/platon_merge.log"
         shell:
@@ -319,7 +320,7 @@ elif ASSEMBLY_STRATEGY == "short":
             python {params.script} -m platon -i {params.input_dir} -o {params.output_dir} -s {params.sample_list} > {log} 2>&1
             """
 # remove Platon module in long reads ONLY mode 
-elif ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRATEGY == "skip":
+elif ASSEMBLY_STRATEGY == "long":
     ## 2.1.1 Plasmidfinder: In silico detection of plasmids
     ### Run Plasmidfinder
     rule plasmidfinder_run:
@@ -331,8 +332,6 @@ elif ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRATEGY == "skip":
             "results/03.genome_component/{sample}/plasmidfinder/results_tab.tsv"
         params:
             outdir = "results/03.genome_component/{sample}/plasmidfinder",
-            # Plasmidfinder database
-            db = config["plasmidfinder_db"],
             # Plasmidfinder minimum coverage
             mincov = config["plasmidfinder_mincov"],
             # Plasmidfinder minimum hreshold for identity
@@ -340,10 +339,10 @@ elif ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRATEGY == "skip":
         log:
             "logs/03.genome_component/plasmidfinder/plasmidfinder_run/{sample}.log"
         conda:
-            "../envs/plasmidfinder.yaml"
+            "genome_component"
         shell:
             """
-            plasmidfinder.py -i {input} -p {params.db} -o {params.outdir} \
+            plasmidfinder.py -i {input} -o {params.outdir} \
             -l {params.mincov} -t {params.minid} -x > {log} 2>&1
 
             # clean up tmp files
@@ -361,7 +360,7 @@ elif ASSEMBLY_STRATEGY == "long" or ASSEMBLY_STRATEGY == "skip":
             input_dir = "results/03.genome_component",
             output_dir = "results/03.genome_component",
             sample_list = SAMPLE_LIST_UPDATE,
-            script = config["merge_results_script"]
+            script = "workflow/scripts/merge_results.py"
         log:
             "logs/03.genome_component/plasmidfinder/plasmidfinder_merge.log"
         shell:
@@ -377,15 +376,25 @@ rule phigaro_run:
     output:
         "results/03.genome_component/{sample}/phigaro/{sample}.phigaro.tsv"
     params:
-        outdir = "results/03.genome_component/{sample}/phigaro"
+        outdir = "results/03.genome_component/{sample}/phigaro",
+        # phigaro config file in container
+        phigaro_conf = "/opt/phigaro/database/config.yml",
+        workdir = WORKDIR
     log:
         "logs/03.genome_component/phigaro/phigaro_run/{sample}.log"
     threads:
         config["threads"]
+    singularity:
+        config["image_phigaro"]
     conda:
-        "../envs/phigaro.yaml"
+        "phigaro"
     shell:
-        "phigaro -f {input} -o {params.outdir} -p --not-open -e tsv html gff bed -d -t {threads} > {log} 2>&1"
+        """
+        cd {params.outdir}
+        phigaro -c {params.phigaro_conf} -f {params.workdir}/{input} -o . -p \
+        --not-open -e tsv html gff bed -d -t {threads} > {params.workdir}/{log} 2>&1
+        cd {params.workdir}
+        """
 
 ## Merge Phigaro results for all samples
 rule phigaro_merge:
@@ -397,7 +406,7 @@ rule phigaro_merge:
         indir = "results/03.genome_component",
         outdir = "results/03.genome_component",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/03.genome_component/phigaro/phigaro_merge.log"
     shell:
@@ -407,31 +416,9 @@ rule phigaro_merge:
 
 # 2.3 Integrative and conjugative elements (ICEs)
 ## ICEfinder local version - Prediction of ICE and IME in Genome Sequences of Bacteria
-### Setup ICEfinder working environment
-rule icefinder_setup:
-    input:
-        lambda wildcards: get_qualified_results("results/03.genome_component/{sample}/prokka/{sample}.gbk", wildcards)
-    output:
-        # signal file to indicate the end of ICEfinder environment setup
-        "results/workflow_signal/03.genome_component/icefinder_setup.done"
-    log:
-        "logs/03.genome_component/icefinder/icefinder_setup.log"
-    conda:
-        "../envs/icefinder.yaml"
-    shell:
-        """
-        # preparation for ICEfinder
-        ## install a perl module
-        cpanm Linux::Distribution > {log} 2>&1
-        ## generate the signal file
-        touch {output} 2>> {log}
-        """
-
 ### Run ICEfinder
 rule icefinder_run:
     input:
-        # signal file to indicate the step of ICEfinder working environment setup has been done
-        signal = "results/workflow_signal/03.genome_component/icefinder_setup.done",
         # standard Genbank file derived from the master .gff generated by Prokka
         gbk = "results/03.genome_component/{sample}/prokka/{sample}.gbk"
     output:
@@ -440,22 +427,24 @@ rule icefinder_run:
     params:
         workdir = WORKDIR,
         outdir = "results/03.genome_component/{sample}/icefinder",
-        # ICEfinder resources directory
-        icefinder_dir = config["icefinder_dir"],
+        # ICEfinder resources directory in container
+        icefinder_dir = "/opt/BacWGSpipe/tools/ICEfinder_linux",
         # script to split genbank files (from https://github.com/fmalmeida/bacannot)
-        splitgenbank_script = config["splitgenbank_script"]
+        splitgenbank_script = "workflow/scripts/splitgenbank.py"
     log:
         "logs/03.genome_component/icefinder/icefinder_run/{sample}.log"
     conda:
-        "../envs/icefinder.yaml"
+        "genome_component"
     shell:
         """
         # preparation for ICEfinder
         ## copy ICEfinder resources to the working directory
         cp -r {params.icefinder_dir}/data {params.icefinder_dir}/scripts {params.icefinder_dir}/tools {params.outdir}/ 2> {log}
         cp {params.icefinder_dir}/ICEfinder_local.pl {params.outdir}/ 2>> {log}
-        ln -fs $(which seqret) {params.outdir}/tools/seqret_7
-        ln -fs $(which transeq) {params.outdir}/tools/transeq_7
+        rm {params.outdir}/tools/seqret
+        rm {params.outdir}/tools/transeq
+        ln -fs $(which seqret) {params.outdir}/tools/seqret
+        ln -fs $(which transeq) {params.outdir}/tools/transeq
         ## make some folders
         mkdir -p {params.outdir}/tmp 2>> {log}
         mkdir -p {params.outdir}/result 2>> {log}
@@ -500,7 +489,7 @@ rule icefinder_merge:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/03.genome_component/icefinder/icefinder_merge.log"
     shell:
@@ -510,9 +499,6 @@ rule icefinder_merge:
 
 # 2.4 Insertion sequences (IS)
 ## digIS: Focused detection of insertion sequences
-### Note: resources/digIS-digISv1.2/src/common/grange.py has been replaced with an
-###   updated version from https://github.com/fmalmeida/bacannot to fix a digIS bug
-### Some digIS parameters are defined in resources/digIS-digISv1.2/definitions.py, such as NUM_THREADS = 4
 ### Run digIS
 rule digis_run:
     input:
@@ -529,14 +515,14 @@ rule digis_run:
         sum = "results/03.genome_component/{sample}/digis/results/{sample}.sum",
     params:
         outdir = "results/03.genome_component/{sample}/digis",
-        # digISscript
-        digis_script = config["digis_script"]
+        # digISscript in container
+        digis_script = "/opt/digIS-digISv1.2/digIS_search.py"
     log:
         "logs/03.genome_component/digis/digis_run/{sample}.log"
     threads:
         4
-    conda:
-        "../envs/digis.yaml"
+    singularity:
+        config["image_digis"]
     shell:
         """
         python {params.digis_script} -i {input.fna} -g {input.gbk} -o {params.outdir} > {log} 2>&1
@@ -558,7 +544,7 @@ rule digis_merge:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/03.genome_component/digis/digis_merge.log"
     shell:
@@ -569,7 +555,7 @@ rule digis_merge:
 # 2.5 Genomic islands (GIs)
 ## IslandPath-DIMOB: Prediction and visualization of genomic islands
 ### Note: IslandPath-DIMOB ONLY works with single contig inputs
-### Thus use a custom script to split GBK file generated by Prokka
+###   Thus use a custom script to split GBK file generated by Prokka
 ### Run IslandPath-DIMOB
 rule islandpath_run:
     input:
@@ -582,11 +568,11 @@ rule islandpath_run:
         workdir = WORKDIR,
         outdir = "results/03.genome_component/{sample}/islandpath",
         # script to split genbank files
-        splitgenbank_script = config["splitgenbank_script"]
+        splitgenbank_script = "workflow/scripts/splitgenbank.py"
     log:
         "logs/03.genome_component/islandpath/islandpath_run/{sample}.log"
     conda:
-        "../envs/islandpath.yaml"
+        "genome_component"
     shell:
         """  
         # split genbank files
@@ -623,7 +609,7 @@ rule islandpath_merge:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/03.genome_component/islandpath/islandpath_merge.log"
     shell:
@@ -644,7 +630,7 @@ rule cctyper:
     log:
         "logs/03.genome_component/cctyper/cctyper_run/{sample}.log"
     conda:
-        "../envs/cctyper.yaml"
+        "cctyper"
     threads:
         16
     shell:
@@ -663,7 +649,7 @@ rule cctyper_merge:
         input_dir = "results/03.genome_component",
         output_dir = "results/03.genome_component",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/03.genome_component/cctyper/cctyper_merge.log"
     shell:

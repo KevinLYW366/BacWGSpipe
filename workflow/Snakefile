@@ -37,6 +37,11 @@ Writer: Yewei Lu (lyw@cwmda.com) & Xiangchen Li (lxc@cwmda.com)
 ##################
 include: "rules/common.smk"
 
+##########################
+# Main singularity image #
+##########################
+singularity: config["image_main"]
+
 ################
 # Target rules #
 ################
@@ -69,8 +74,6 @@ if config["seqdata_source"] == 0:
                 "results/00.rawdata/long_read/multiqc_raw/multiqc_report.html",
                 # Merged NanoStat QC results for Nanopore long fastq clean reads
                 "results/01.data_clean/long_read/all_clean_NanoStats.xls",
-                # Nanoplot report for Nanopore long fastq clean reads QC
-                expand("results/01.data_clean/long_read/{sample}/nanoplot_clean/{sample}_clean_NanoPlot-report.html", sample=SAMPLES),
                 # MultiQC report for Nanopore long fastq clean reads QC (NanoStat)
                 "results/01.data_clean/long_read/multiqc_clean/multiqc_report.html",
 
@@ -223,8 +226,6 @@ elif config["seqdata_source"] == 1:
             "results/00.rawdata/long_read/multiqc_raw/multiqc_report.html",
             # Merged NanoStat QC results for Nanopore long fastq clean reads
             "results/01.data_clean/long_read/all_clean_NanoStats.xls",
-            # Nanoplot report for Nanopore long fastq clean reads QC
-            expand("results/01.data_clean/long_read/{sample}/nanoplot_clean/{sample}_clean_NanoPlot-report.html",sample=SAMPLES),
             # MultiQC report for Nanopore long fastq clean reads QC (NanoStat)
             "results/01.data_clean/long_read/multiqc_clean/multiqc_report.html",
 

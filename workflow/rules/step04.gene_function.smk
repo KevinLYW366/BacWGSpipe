@@ -18,13 +18,15 @@ rule eggnog_mapper:
         "logs/04.gene_function/eggnog-mapper/{sample}.log"
     threads:
         config["threads"]
+    singularity:
+        config["image_gene_function"]
     conda:
-        "../envs/eggnog-mapper.yaml"
+        "gene_function"
     shell:
         """
         emapper.py --cpu {threads} --override -i {input} --itype proteins \
         --data_dir {params.db} -o {wildcards.sample} --excel --go_evidence all \
-        --output_dir {params.outdir} > {log} 2>&1
+        --output_dir {params.outdir} --temp_dir {params.outdir} > {log} 2>&1
         """
 
 # 1.2 GO: Gene Ontology database annotation
@@ -36,15 +38,17 @@ rule go_annotate:
         go = "results/04.gene_function/{sample}/GO/{sample}_go.xls",
         go_level = "results/04.gene_function/{sample}/GO/{sample}_go_with_level.xls"
     params:
-        # GO database core GO ontology (OBO Format) file
-        obo = config["go_obo"],
+        # GO database core GO ontology (OBO Format) file in container
+        obo = "/opt/bwp_gene_function/database/GO/GO-basic_20190417.obo",
         outdir = "results/04.gene_function/{sample}/GO",
         # Python script to annotate GO terms
-        script = config["go_annotate_script"]
+        script = "workflow/scripts/annotate_eggnog_results_go.py"
     log:
         "logs/04.gene_function/GO/go_annotate/{sample}.log"
+    singularity:
+        config["image_gene_function"]
     conda:
-        "../envs/goatools.yaml"
+        "gene_function"
     shell:
         """
         python {params.script} {params.obo} {input} {params.outdir} {wildcards.sample} > {log} 2>&1
@@ -59,12 +63,14 @@ rule go_plot:
         png = "results/04.gene_function/{sample}/GO/{sample}_go.png"
     params:
         # R script to plot GO annotation results
-        script = config["go_plot_script"],
+        script = "workflow/scripts/plot_go_annotation.R",
         outdir = "results/04.gene_function/{sample}/GO"
     log:
         "logs/04.gene_function/GO/go_plot/{sample}.log"
+    singularity:
+        config["image_gene_function"]
     conda:
-        "../envs/R_plot.yaml"
+        "R"
     shell:
         """
         Rscript {params.script} {input} {wildcards.sample} {params.outdir} > {log} 2>&1
@@ -81,14 +87,16 @@ rule kegg_annotate_plot:
         kegg_plot_png = "results/04.gene_function/{sample}/KEGG/{sample}_kegg.png",
     params:
         # R script to annotate and plot KEGG PATHWAY info
-        script = config["kegg_annotate_plot_script"],
-        # Path to KEGG PATHWAY database file
-        db = config["kegg_db"],
+        script = "workflow/scripts/annotate_plot_eggnog_results_kegg.R",
+        # Path to KEGG PATHWAY database file in container
+        db = "/opt/bwp_gene_function/database/KEGG/reference_pathway/KEGG_reference_pathway_database_20221017.txt",
         outdir = "results/04.gene_function/{sample}/KEGG"
     log:
         "logs/04.gene_function/KEGG/{sample}.log"
+    singularity:
+        config["image_gene_function"]
     conda:
-        "../envs/R_plot.yaml"
+        "R"
     shell:
         """
         Rscript {params.script} {input} {params.db} {wildcards.sample} {params.outdir} > {log} 2>&1
@@ -103,12 +111,16 @@ rule cog_annotate:
         "results/04.gene_function/{sample}/COG/{sample}_cog.xls"
     params:
         # Python script to annotate COG terms
-        script = config["cog_annotate_script"],
-        # Path to COG database files directory
-        db = config["cog_database_directory"],
+        script = "workflow/scripts/annotate_eggnog_results_cog.py",
+        # Path to COG database files directory in container
+        db = "/opt/bwp_gene_function/database/COG/COG2020",
         outdir = "results/04.gene_function/{sample}/COG"
     log:
         "logs/04.gene_function/COG/cog_annotate/{sample}.log"
+    singularity:
+        config["image_gene_function"]
+    conda:
+        "gene_function"
     shell:
         """
         python {params.script} {params.db} {input} {params.outdir} {wildcards.sample} > {log} 2>&1
@@ -123,62 +135,43 @@ rule cog_plot:
         png = "results/04.gene_function/{sample}/COG/{sample}_cog.png"
     params:
         # R script to plot COG annotation results
-        script = config["cog_plot_script"],
-        # Path to COG database files directory
-        db = config["cog_database_directory"],
+        script = "workflow/scripts/plot_cog_annotation.R",
+        # Path to COG database files directory in container
+        db = "/opt/bwp_gene_function/database/COG/COG2020",
         outdir = "results/04.gene_function/{sample}/COG"
     log:
         "logs/04.gene_function/COG/cog_plot/{sample}.log"
+    singularity:
+        config["image_gene_function"]
     conda:
-        "../envs/R_plot.yaml"
+        "R"
     shell:
         """
         Rscript {params.script} {input} {params.db} {wildcards.sample} {params.outdir} > {log} 2>&1
         """
 
 # 1.5 NCBI Taxonomy
-## Upgrade the local NCBI Taxonomy database in ETE toolkit
-rule taxonomy_db_upgrade:
-    input:
-        lambda wildcards: get_qualified_results("results/04.gene_function/{sample}/eggnog-mapper/{sample}.emapper.annotations", wildcards)
-    output:
-        "results/workflow_signal/04.gene_function/taxonomy_db_upgrade.done"
-    params:
-        # Python script to annotate NCBI Taxonomy terms
-        script = config["taxonomy_annotate_script"],
-        # Path to NCBI Taxonomy database files directory
-        db = config["taxonomy_database_directory"],
-        outdir = "results/workflow_signal/04.gene_function"
-    log:
-        "logs/04.gene_function/Taxonomy/taxonomy_db_upgrade.log"
-    conda:
-        "../envs/ete3.yaml"
-    shell:
-        """
-        python {params.script} {params.db} empty {params.outdir} empty y > {log} 2>&1
-        """
-
-
 ## Perform NCBI Taxonomy annotation on eggNOG-mapper results
 rule taxonomy_annotate:
     input:
-        emapper = "results/04.gene_function/{sample}/eggnog-mapper/{sample}.emapper.annotations",
-        flag = "results/workflow_signal/04.gene_function/taxonomy_db_upgrade.done"
+        emapper = "results/04.gene_function/{sample}/eggnog-mapper/{sample}.emapper.annotations"
     output:
         "results/04.gene_function/{sample}/Taxonomy/{sample}_taxonomy.xls"
     params:
         # Python script to annotate NCBI Taxonomy terms
-        script = config["taxonomy_annotate_script"],
-        # Path to NCBI Taxonomy database files directory
-        db = config["taxonomy_database_directory"],
+        script = "workflow/scripts/annotate_eggnog_results_taxonomy.py",
+        # Path to NCBI Taxonomy database files directory in container
+        db = "/opt/bwp_gene_function/database/NCBI_Taxonomy",
         outdir = "results/04.gene_function/{sample}/Taxonomy"
     log:
         "logs/04.gene_function/Taxonomy/taxonomy_annotate/{sample}.log"
+    singularity:
+        config["image_gene_function"]
     conda:
-        "../envs/ete3.yaml"
+        "ete3"
     shell:
         """
-        python {params.script} {params.db} {input.emapper} {params.outdir} {wildcards.sample} n > {log} 2>&1
+        python {params.script} {params.db} {input.emapper} {params.outdir} {wildcards.sample} > {log} 2>&1
         """
 
 ## Plot NCBI Taxonomy annotation results
@@ -190,14 +183,16 @@ rule taxonomy_plot:
         png = "results/04.gene_function/{sample}/Taxonomy/{sample}_taxonomy.png"
     params:
         # R script to plot NCBI Taxonomy annotation results
-        script = config["taxonomy_plot_script"],
-        # Path to NCBI Taxonomy database files directory
-        db = config["taxonomy_database_directory"],
+        script = "workflow/scripts/plot_taxonomy_annotation.R",
+        # Path to NCBI Taxonomy database files directory in container
+        db = "/opt/bwp_gene_function/database/NCBI_Taxonomy",
         outdir = "results/04.gene_function/{sample}/Taxonomy"
     log:
         "logs/04.gene_function/Taxonomy/taxonomy_plot/{sample}.log"
+    singularity:
+        config["image_gene_function"]
     conda:
-        "../envs/R_plot.yaml"
+        "R"
     shell:
         """
         Rscript {params.script} {input} {wildcards.sample} {params.outdir} > {log} 2>&1
@@ -218,23 +213,29 @@ rule rgi_run:
     params:
         input_dir = lambda wildcards, input: extract_absolute_dirname(wildcards, input.faa),
         output_dir = lambda wildcards, output: extract_absolute_dirname(wildcards, output.txt),
-        card_dir = config['card_database_directory'],
-        workdir = WORKDIR
+        workdir = WORKDIR,
+        # database directory in container
+        db = "/opt/card_vfdb/database/CARD"
     threads:
         config["threads"]
     log:
         "logs/04.gene_function/CARD/rgi_run/{sample}.log"
+    singularity:
+        config["image_card_vfdb"]
     conda:
-        "../envs/rgi.yaml"
+        "rgi"
     shell:
         """
-        # have to run RGI local mode in CARD database directory
-        cd {params.card_dir}
+        ## Set up RGI databse
+        cd {params.output_dir}
+        mkdir -p localDB
+        ln -s {params.db}/localDB/* localDB/
         
         # run RGI
         rgi main --input_sequence {params.input_dir}/{wildcards.sample}.faa \
-        --output_file {params.output_dir}/{wildcards.sample}.report \
-        --input_type protein --local --clean > {params.workdir}/{log} 2>&1
+        --output_file {wildcards.sample}.report \
+        --input_type protein --clean --local > {params.workdir}/{log} 2>&1
+        rm -rf localDB
         
         # go back to snakemake workflow directory
         cd {params.workdir}
@@ -250,7 +251,7 @@ rule rgi_merge:
         input_dir = "results/04.gene_function",
         output_dir = "results/04.gene_function",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/04.gene_function/CARD/rgi_merge.log"
     shell:
@@ -273,14 +274,16 @@ rule abricate_card_run:
         "results/04.gene_function/{sample}/CARD/abricate/{sample}_abricate_card_results.xls"
     params:
         ### Python script to reformat Abricate (CARD) results
-        script = config["script_reformat_abricate_card"],
-        card_aro_index = os.path.join(config["card_database_directory"],"card_database/aro_index.tsv")
+        script = "workflow/scripts/reformat_abricate_card_results.py",
+        card_aro_index = os.path.join("/opt/card_vfdb/database/CARD", "aro_index.tsv")
     threads:
         config["threads"]
     log:
         "logs/04.gene_function/CARD/abricate_card_run/{sample}.log"
+    singularity:
+        config["image_card_vfdb"]
     conda:
-        "../envs/abricate.yaml"
+        "abricate"
     shell:
         """
         abricate --db card --threads {threads} {input.fna} > {output}.tmp 2> {log}
@@ -297,7 +300,7 @@ rule abricate_card_merge:
         input_dir = "results/04.gene_function",
         output_dir = "results/04.gene_function",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/04.gene_function/CARD/abricate_card_merge.log"
     shell:
@@ -313,10 +316,14 @@ rule rgi_abricate_card_merge:
     output:
         "results/04.gene_function/all_card_results.xls"
     params:
-        script = config["script_merge_rgi_abricate_card"],
-        card_aro_index = os.path.join(config["card_database_directory"], "card_database/aro_index.tsv")
+        script = "workflow/scripts/merge_abricate_rgi.py",
+        card_aro_index = os.path.join("/opt/card_vfdb/database/CARD", "aro_index.tsv")
     log:
         "logs/04.gene_function/CARD/rgi_abricate_card_merge.log"
+    singularity:
+        config["image_card_vfdb"]
+    conda:
+        "xlsxwriter"
     shell:
         """
         python {params.script} {input.rgi} {input.abricate_card} {output} {params.card_aro_index} > {log} 2>&1
@@ -337,12 +344,14 @@ rule extract_card_matrix:
         aro_info = "results/04.gene_function/card_aro_info.xls",
         binary_matrix = "results/04.gene_function/all_card_results_matrix_binary.xlsx",
     params:
-        card_aro_index = os.path.join(config["card_database_directory"], "card_database/aro_index.tsv"),
-        script = config["script_extract_card"]
+        card_aro_index = os.path.join("/opt/card_vfdb/database/CARD", "aro_index.tsv"),
+        script = "workflow/scripts/extract_card_result.py"
     log:
         "logs/04.gene_function/CARD/extract_card_matrix.log"
+    singularity:
+        config["image_card_vfdb"]
     conda:
-        "../envs/xlsxwriter.yaml"
+        "xlsxwriter"
     shell:
         """
         python {params.script} {input} {params.card_aro_index} {output.matrix} {output.aro_info} {output.binary_matrix} > {log} 2>&1
@@ -359,14 +368,16 @@ if config["seqdata_source"] == 0 or config["seqdata_source"] == 2:
         output:
             "results/04.gene_function/all_ccne_results.xls"
         params:
-            ccne_amr_list = config["ccne_amr_list"],
-            script = config["script_run_ccne"],
+            ccne_amr_list = "/opt/bwp_gene_function/database/ccne/CARD_AMR_clustered.csv",
+            script = "workflow/scripts/ccne.py",
             data_dir = "results/01.data_clean/short_read/cleandata",
             fasta_dir = "results/02.assembly"
         log:
             "logs/04.gene_function/CARD/ccne.log"
+        singularity:
+            config["image_gene_function"]
         conda:
-            "../envs/ccne.yaml"
+            "ccne"
         threads:
             64
         shell:
@@ -388,8 +399,7 @@ if config["seqdata_source"] == 0 or config["seqdata_source"] == 2:
             results/04.gene_function/ccne {threads} {output} >> {log} 2>&1
             
             # remove tmp files
-            rm -rf results/04.gene_function/ccne/tmp 2>> {log}
-            rm -f results/04.gene_function/ccne/input.list 2>> {log}
+            rm -rf results/04.gene_function/ccne 2>> {log}
             """
 
 # 2.2 Virulence factors (VF)
@@ -405,9 +415,9 @@ rule vfdb_annotate:
         "results/04.gene_function/{sample}/VFDB/{sample}_vfdb_blastn_onGenes.txt"
     params:
         # script to run blast related work (from https://github.com/fmalmeida/bacannot)
-        script = config["blast_script"],
+        script = "workflow/scripts/run_blasts.py",
         # VFDB full nucleotide database
-        db = config["vfdb_database_directory"],
+        db = "/opt/card_vfdb/database/VFDB/VFDB_setA_nt.fas",
         # blast parameters
         ## VFDB minimum coverage
         minid = config["vfdb_blast_minid"],
@@ -417,8 +427,10 @@ rule vfdb_annotate:
         "logs/04.gene_function/VFDB/vfdb_annotate/{sample}.log"
     threads:
         config["threads"]
+    singularity:
+        config["image_card_vfdb"]
     conda:
-        "../envs/blast.yaml"
+        "blast"
     shell:
         """
         # With predicted gene sequences
@@ -436,7 +448,7 @@ rule vfdb_merge:
         input_dir = "results/04.gene_function",
         output_dir = "results/04.gene_function",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/04.gene_function/VFDB/vfdb_merge.log"
     shell:
@@ -459,11 +471,13 @@ rule extract_vfdb_matrix:
         vf_info = "results/04.gene_function/vfdb_vf_info.xls",
         binary_matrix = "results/04.gene_function/all_vfdb_results_matrix_binary.xlsx",
     params:
-        script = config["script_extract_vfdb"]
+        script = "workflow/scripts/extract_vf_result.py"
     log:
         "logs/04.gene_function/VFDB/extract_vfdb_matrix.log"
+    singularity:
+        config["image_card_vfdb"]
     conda:
-        "../envs/xlsxwriter.yaml"
+        "xlsxwriter"
     shell:
         """
         python {params.script} {input} {output.matrix} {output.vf_info} {output.binary_matrix} > {log} 2>&1
@@ -479,18 +493,15 @@ rule signalp:
         # with predicted gene sequences
         "results/04.gene_function/{sample}/secretory_protein/signalp/prediction_results.txt"
     params:
-        # script to load a local conda environment settings
-        env = config["signalp_env_script"],
         outdir = "results/04.gene_function/{sample}/secretory_protein/signalp"
     log:
         "logs/04.gene_function/secretory_protein/signalp/{sample}.log"
     threads:
         config["threads"]
+    singularity:
+        config["image_signalp"]
     shell:
         """
-        # load local conda environment
-        source {params.env}
-        
         # run SignalP
         signalp6 --fastafile {input} --organism other --output_dir {params.outdir} \
         --format none --mode fast -wp {threads} > {log} 2>&1
@@ -505,16 +516,13 @@ rule tmhmm:
         # with predicted gene sequences
         "results/04.gene_function/{sample}/secretory_protein/tmhmm/prediction_results.txt"
     params:
-        # script to load a local conda environment settings
-        env = config["tmhmm_env_script"],
         outdir = "results/04.gene_function/{sample}/secretory_protein/tmhmm"
     log:
         "logs/04.gene_function/secretory_protein/tmhmm/{sample}.log"
+    singularity:
+        config["image_tmhmm"]
     shell:
         """
-        # load local conda environment
-        source {params.env}
-    
         # run SignalP
         tmhmm -workdir {params.outdir} -short {input} > {output} 2> {log}
         
@@ -537,9 +545,13 @@ rule sec_pro:
     params:
         outdir = "results/04.gene_function/{sample}/secretory_protein",
         # Python script to identify secretory proteins based on SignalP and TMHMM results
-        script = config["script_identify_sec_pro"]
+        script = "workflow/scripts/identify_sec_pro.py"
     log:
         "logs/04.gene_function/secretory_protein/sec_pro/{sample}.log"
+    singularity:
+        config["image_gene_function"]
+    conda:
+        "gene_function"
     shell:
         """
         python {params.script} {input.signalp} {input.tmhmm} {output} > {log} 2>&1

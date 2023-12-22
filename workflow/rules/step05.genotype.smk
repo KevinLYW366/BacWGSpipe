@@ -16,7 +16,7 @@ rule mlst_run:
     threads:
         config["threads"]
     conda:
-        "../envs/mlst.yaml"
+        "genome_component"
     shell:
         """
         mlst --threads {threads} {input} > {output} 2> {log}
@@ -34,7 +34,7 @@ rule mlst_merge:
         indir = "results/05.genotype",
         outdir = "results/05.genotype",
         sample_list = SAMPLE_LIST_UPDATE,
-        script = config["merge_results_script"]
+        script = "workflow/scripts/merge_results.py"
     log:
         "logs/05.genotype/mlst/mlst_merge.log"
     shell:

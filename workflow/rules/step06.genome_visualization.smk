@@ -14,13 +14,13 @@ rule mgcplotter_chr:
         workdir = WORKDIR,
         outdir = "results/06.genome_visualization/{sample}/mgcplotter",
         # script to split genbank files
-        splitgenbank_script = config["splitgenbank_script"]
+        splitgenbank_script = "workflow/scripts/splitgenbank.py",
     log:
         "logs/06.genome_visualization/mgcplotter_chr/{sample}.log"
     threads:
         64
     conda:
-        "../envs/mgcplotter.yaml"
+        "mgcplotter"
     shell:
         """
         # split genbank files
@@ -31,37 +31,39 @@ rule mgcplotter_chr:
         cd {params.workdir}
 
         # Circos plot for chromosome
+        cd {params.outdir}
         shopt -s nullglob
-        for f in {params.outdir}/gbk_input/chr*.gbk
+        for f in gbk_input/chr*.gbk
         do
           chr_num=`basename $f .gbk`
           chr_len=`head -n1 $f | awk '{{print $3}}'`
            
           # Run MGCplotter with no COG assignment
-          mkdir -p {params.outdir}/without_cog/{wildcards.sample}_${{chr_num}} 2>> {log}
-          MGCplotter -r $f -o {params.outdir}/without_cog/{wildcards.sample}_${{chr_num}} \
+          mkdir -p without_cog/{wildcards.sample}_${{chr_num}} 2>> {params.workdir}/{log}
+          MGCplotter -r $f -o without_cog/{wildcards.sample}_${{chr_num}} \
           --gc_content_p_color orange --gc_content_n_color blue \
-          --gc_skew_p_color pink --gc_skew_n_color green >> {log} 2>&1
+          --gc_skew_p_color pink --gc_skew_n_color green >> {params.workdir}/{log} 2>&1
           # Add some texts
-          convert {params.outdir}/without_cog/{wildcards.sample}_${{chr_num}}/circos.png -gravity center \
+          convert without_cog/{wildcards.sample}_${{chr_num}}/circos.png -font Ubuntu -gravity center \
           -pointsize 50 -fill black -annotate 0x0+0-20 "{wildcards.sample}_${{chr_num}}" \
           -annotate 0x0+0+50 "${{chr_len}} bp" \
-          {params.outdir}/without_cog/{wildcards.sample}_${{chr_num}}.png >> {log} 2>&1
+          without_cog/{wildcards.sample}_${{chr_num}}.png >> {params.workdir}/{log} 2>&1
 
           # Run MGCplotter with COG assignment
-          mkdir -p {params.outdir}/with_cog/{wildcards.sample}_${{chr_num}} 2>> {log}
-          MGCplotter -r $f -o {params.outdir}/with_cog/{wildcards.sample}_${{chr_num}} \
-          --assign_cog_color --gc_content_p_color orange\
-          --gc_content_n_color blue --gc_skew_p_color pink --gc_skew_n_color green >> {log} 2>&1
+          mkdir -p with_cog/{wildcards.sample}_${{chr_num}} 2>> {params.workdir}/{log}
+          MGCplotter -r $f -o with_cog/{wildcards.sample}_${{chr_num}} \
+          --assign_cog_color --gc_content_p_color orange \
+          --gc_content_n_color blue --gc_skew_p_color pink --gc_skew_n_color green >> {params.workdir}/{log} 2>&1
           # Add some texts
-          convert {params.outdir}/with_cog/{wildcards.sample}_${{chr_num}}/circos.png -gravity center \
+          convert with_cog/{wildcards.sample}_${{chr_num}}/circos.png -font Ubuntu -gravity center \
           -pointsize 50 -fill black -annotate 0x0+0-20 "{wildcards.sample}_${{chr_num}}" \
           -annotate 0x0+0+50 "${{chr_len}} bp" \
-          {params.outdir}/with_cog/{wildcards.sample}_${{chr_num}}.png >> {log} 2>&1
+          with_cog/{wildcards.sample}_${{chr_num}}.png >> {params.workdir}/{log} 2>&1
         done
 
         # Create a flag file when everything done
-        touch {output} 2>> {log}
+        touch {params.workdir}/{output} 2>> {params.workdir}/{log}
+        cd {params.workdir}
         """
 
 ##### 2. Plasmid Visualization #####
@@ -73,49 +75,52 @@ rule mgcplotter_plas:
     output:
         "results/06.genome_visualization/{sample}/mgcplotter/mgcplotter_plas.done"
     params:
+        workdir = WORKDIR,
         outdir = "results/06.genome_visualization/{sample}/mgcplotter",
         # not draw a plot for too short plasmid since MGCplotter might throw an error
-        plas_length_threshold = config["plas_length_threshold"]
+        plas_length_threshold = config["plas_length_threshold"],
     log:
         "logs/06.genome_visualization/mgcplotter_plas/{sample}.log"
     threads:
         64
     conda:
-        "../envs/mgcplotter.yaml"
+        "mgcplotter"
     shell:
         """
         # Circos plot for plasmid
+        cd {params.outdir}
         shopt -s nullglob
-        for f in {params.outdir}/gbk_input/plas*.gbk
+        for f in gbk_input/plas*.gbk
         do
           plas_num=`basename $f .gbk`
           plas_len=`head -n1 $f | awk '{{print $3}}'`
           
           if [ "${{plas_len}}" -gt "{params.plas_length_threshold}" ]; then
               # Run MGCplotter with no COG assignment
-              mkdir -p {params.outdir}/without_cog/{wildcards.sample}_${{plas_num}} 2>> {log}
-              MGCplotter -r $f -o {params.outdir}/without_cog/{wildcards.sample}_${{plas_num}} \
+              mkdir -p without_cog/{wildcards.sample}_${{plas_num}} 2>> {params.workdir}/{log}
+              MGCplotter -r $f -o without_cog/{wildcards.sample}_${{plas_num}} \
               --gc_content_p_color orange --gc_content_n_color blue \
-              --gc_skew_p_color pink --gc_skew_n_color green >> {log} 2>&1
+              --gc_skew_p_color pink --gc_skew_n_color green >> {params.workdir}/{log} 2>&1
               # Add some texts
-              convert {params.outdir}/without_cog/{wildcards.sample}_${{plas_num}}/circos.png -gravity center \
+              convert without_cog/{wildcards.sample}_${{plas_num}}/circos.png -font Ubuntu -gravity center \
               -pointsize 50 -fill black -annotate 0x0+0-20 "{wildcards.sample}_${{plas_num}}" \
               -annotate 0x0+0+50 "${{plas_len}} bp" \
-              {params.outdir}/without_cog/{wildcards.sample}_${{plas_num}}.png >> {log} 2>&1
+              without_cog/{wildcards.sample}_${{plas_num}}.png >> {params.workdir}/{log} 2>&1
     
               # Run MGCplotter with COG assignment
-              mkdir -p {params.outdir}/with_cog/{wildcards.sample}_${{plas_num}} 2>> {log}
-              MGCplotter -r $f -o {params.outdir}/with_cog/{wildcards.sample}_${{plas_num}} \
-              --assign_cog_color --gc_content_p_color orange\
-              --gc_content_n_color blue --gc_skew_p_color pink --gc_skew_n_color green >> {log} 2>&1
+              mkdir -p with_cog/{wildcards.sample}_${{plas_num}} 2>> {params.workdir}/{log}
+              MGCplotter -r $f -o with_cog/{wildcards.sample}_${{plas_num}} \
+              --assign_cog_color --gc_content_p_color orange \
+              --gc_content_n_color blue --gc_skew_p_color pink --gc_skew_n_color green >> {params.workdir}/{log} 2>&1
               # Add some texts
-              convert {params.outdir}/with_cog/{wildcards.sample}_${{plas_num}}/circos.png -gravity center \
+              convert with_cog/{wildcards.sample}_${{plas_num}}/circos.png -font Ubuntu -gravity center \
               -pointsize 50 -fill black -annotate 0x0+0-20 "{wildcards.sample}_${{plas_num}}" \
               -annotate 0x0+0+50 "${{plas_len}} bp" \
-              {params.outdir}/with_cog/{wildcards.sample}_${{plas_num}}.png >> {log} 2>&1
+              with_cog/{wildcards.sample}_${{plas_num}}.png >> {params.workdir}/{log} 2>&1
           fi
         done
 
         # Create a flag file when everything done
-        touch {output} 2>> {log}
+        touch {params.workdir}/{output} 2>> {params.workdir}/{log}
+        cd {params.workdir}
         """

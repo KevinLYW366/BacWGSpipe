@@ -147,7 +147,7 @@ for(i in panels$t) {
 
 # output plots
 png_output = file.path(output_dir, paste0(sample, "_kegg.png"))
-ggsave(filename = png_output, plot = gt, width = 10, height = 8, dpi = 300, device = png)
+ggsave(filename = png_output, plot = gt, width = 10, height = 8, dpi = 100, device = png)
 pdf_output = file.path(output_dir, paste0(sample, "_kegg.pdf"))
 ggsave(filename = pdf_output, plot = gt, width = 10, height = 8, dpi = 300, device = "pdf")
 

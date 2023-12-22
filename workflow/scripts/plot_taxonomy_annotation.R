@@ -65,6 +65,6 @@ p1 <- ggplot(eggnog_tax_plot_df, aes(x = NCBI_Taxonomy_id, y = gene_count)) +
 
 # output plots
 png_output = file.path(output_dir, paste0(sample, "_taxonomy.png"))
-ggsave(filename = png_output, plot = p1, width = 12, height = 8, dpi = 300, device = png)
+ggsave(filename = png_output, plot = p1, width = 12, height = 8, dpi = 100, device = png)
 pdf_output = file.path(output_dir, paste0(sample, "_taxonomy.pdf"))
 ggsave(filename = pdf_output, plot = p1, width = 12, height = 8, dpi = 300, device = "pdf")

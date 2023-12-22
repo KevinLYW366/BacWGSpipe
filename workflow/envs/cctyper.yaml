@@ -1,4 +1,4 @@
-name: blast
+name: cctyper
 channels:
   - russel88
   - bioconda

@@ -63,7 +63,7 @@ p1 <- ggplot(go_annotation_df, aes(x = GO_description_color, y = gene_count)) +
 
 # output plots
 png_output <- file.path(output_dir, paste0(sample, "_go.png"))
-ggsave(filename = png_output, plot = p1, width = 13, height = 8, dpi = 300, device = png)
+ggsave(filename = png_output, plot = p1, width = 13, height = 8, dpi = 100, device = png)
 pdf_output <- file.path(output_dir, paste0(sample, "_go.pdf"))
 ggsave(filename = pdf_output, plot = p1, width = 13, height = 8, dpi = 300, device = "pdf")
 

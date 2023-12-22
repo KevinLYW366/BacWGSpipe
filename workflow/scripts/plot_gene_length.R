@@ -59,6 +59,6 @@ p <- ggplot(count_df, aes(x=length_bin, y=gene_count)) +
 
 # Output plots
 png_output = file.path(outdir, paste0(sample, "_gene_length.png"))
-ggsave(filename = png_output, plot = p, width = 12, height = 8, dpi = 300, device = png)
+ggsave(filename = png_output, plot = p, width = 12, height = 8, dpi = 100, device = png)
 
 

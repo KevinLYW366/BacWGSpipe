@@ -38,11 +38,15 @@ output:
 ---
 
 <style type ="text/css">
+#TOC {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
 .main-container {
-  max-width: 1500px; 
-  margin-left: 50px;    
+  max-width: 100% !important; 
+  margin-left: 0px;
   margin-right: 50px;
-  margin-bottom: 0px;
 }
 td { /* Table  */
   font-size: 15px; 
@@ -52,34 +56,34 @@ td { /* Table  */
 th {
   font-size: 15px; 
   text-align: center; 
-  font-family: "Times","sans-serif";     
+  font-family: "Times","sans-serif";
   font-weight: 600;
 }
 h1.title {
-  font-size: 28px;
-  color: #377EB8;
+  font-size: 32px;
+  color: #00008B;
 }
 h1 {
   font-size: 25px; 
   font-weight: 600; 
-  color: #377EB8; 
+  color: #00008B; 
   font-family: "Times","sans-serif";
 }
 h2 {
   font-size: 22px; 
   font-weight: 600; 
-  color: #377EB8; 
+  color: #00008B; 
   font-family: "Times","sans-serif";
 }
 h3 {
   font-size: 20px; 
-  font-weight: 600; 
+  font-weight: 400; 
   color: #377EB8; 
   font-family: "Times","sans-serif";
 }
 h4 {
   font-size: 18px; 
-  font-weight: 600; 
+  font-weight: 400; 
   color: #377EB8; 
   font-family: "Times","sans-serif";
 }
@@ -97,7 +101,13 @@ h4.date {
 }
 h5 {
   line-height: 200%;  
-  font-weight: 600;  
+  font-weight: 400;  
+  font-family: "Times","sans-serif";
+}
+h6 {
+  font-size: 15px; 
+  font-weight: 400; 
+  color: #377EB8; 
   font-family: "Times","sans-serif";
 }
 img {
@@ -107,27 +117,34 @@ img {
 }
 p {
   line-height: 180%;    
+  font-family: "Times";     
+  text-align: justify;    
+  font-size: 15px;
+}
+ul {
+  line-height: 180%;    
   font-family: "Times","sans-serif";     
   text-align: justify;    
   font-size: 15px;
 }
 </style>
 
-<!-- <style type="text/css"> -->
-<!-- .main-container { -->
-<!--   max-width: 1800px; -->
-<!--   margin-left: auto; -->
-<!--   margin-right: auto; -->
-<!-- } -->
-<!-- </style> -->
+<style>
+.nav-tabs > li.active > a {
+  font-weight: bold;
+  font-size: 18px;
+  color: #377EB8;
+}
+</style>
 
 ```{r load packages, echo = FALSE, message = FALSE, warning = FALSE}
 library(htmltools)
 library(DT)
-library(EBImage)
+# library(EBImage)
 library(dplyr)
 library(glue)
 library(tidyr)
+library(kableExtra)
 ```
 
 ***
@@ -176,15 +193,17 @@ datatable(
   rownames = FALSE,
   colnames = c("Sample ID", "Number of Reads", "Total bases (bp)", 
                  "Mean Read Length (bp)", "N50 Read Length (bp)", "Mean Read Quality"),
-  extensions = c("Scroller", "Buttons"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -217,33 +236,20 @@ datatable(
   rownames = FALSE,
   colnames = c("Sample ID", "Number of Reads", "Total bases (bp)", 
                  "Mean Read Length (bp)", "N50 Read Length (bp)", "Mean Read Quality"),
-  extensions = c("Scroller", "Buttons"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
-
-<center>&nbsp;</center>
-
-Distribution of the read length in TGS clean data:
-
-<center>**Figure 2-1 Distribution plot of the read length in TGS clean data**</center>
-
-<center>
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-sample_list <- scan(params$sample_list, character())
-pics <- paste(params$long_read_qc_dir, sample_list, "nanoplot_clean", sample_list, sep="/")
-pics <- paste0(pics, "_clean_Non_weightedHistogramReadlength.png")
-display(readImage(pics), method="browser")
-```
-</center>
 
 <center>&nbsp;</center>
 
@@ -275,15 +281,17 @@ datatable(
   rownames = FALSE,
   colnames = c("Sample ID", "Total Number", "Total Length (bp)", 
                  "N50 Length (bp)", "N90 Length (%)", "Max Length (bp)", "Sequence GC (%)"),
-  extensions = c("Scroller", "Buttons"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -310,7 +318,7 @@ Coding genes, repetitive sequences, non-coding RNA, mobile genetic elements and 
 
 &nbsp;
 
-#### 2.3.1 Coding Genes
+#### 2.3.1 Coding Genes {.tabset .tabset-dropdown}
 
 Prokka<sup>[3]</sup> is used to predict coding genes from genome assembly. Statistics of coding genes prediction results:
 
@@ -363,15 +371,17 @@ datatable(
   rownames = FALSE,
   colnames = c("Sample ID", "Genome size (bp)", "Gene number (#)",
                "Gene total length (bp)", "Gene average length (bp)", "Gene length/Genome (%)"),
-  extensions = c("Scroller", "Buttons"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -380,17 +390,20 @@ datatable(
 
 Plot the distribution of coding gene length:
 
-<center>**Figure 2-2 Distribution plot of coding gene length **</center>
-
-<center>
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, results='asis'}
 sample_list <- scan(params$pass_sample_list, character())
-pics <- paste(params$genome_component_dir, sample_list, "prokka", paste0(sample_list, "_gene_length.png"), sep="/")
-display(readImage(pics), method="browser")
+for (sample in sample_list) {
+  pic <- file.path(params$genome_component_dir, sample, "prokka", paste0(sample, "_gene_length.png"))
+  cat("##### ", sample, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=60%}", "\n")
+  cat("<center>**Figure 2-1 Distribution plot of coding gene length**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("\n")
+}
 ```
-</center>
 
-<center>&nbsp;</center>
+#### {- .toc-ignore}
 
 **Result files:**
 
@@ -463,15 +476,17 @@ datatable(
   rownames = FALSE,
   colnames = c("Sample ID", "Type", "Number (#)",
                "Average length (bp)", "Total length (bp)"),
-  extensions = c("Scroller", "Buttons"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollY = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -518,17 +533,19 @@ datatable(
   plasmidfinder_results_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "Plasmidfinder number (#)", "Total length (bp)",
                "Average length (bp)"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -571,17 +588,19 @@ datatable(
   phigaro_results_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "Prophage number (#)", "Total length (bp)",
                "Average length (bp)"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -625,17 +644,19 @@ datatable(
   icefinder_results_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "ICE number (#)", "Total length (bp)",
                "Average length (bp)"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -680,17 +701,19 @@ datatable(
   digis_results_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "IS number (#)", "Total length (bp)",
                "Average length (bp)"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -735,17 +758,19 @@ datatable(
   islandpath_results_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "GI number (#)", "Total length (bp)",
                "Average length (bp)"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -788,17 +813,19 @@ datatable(
   cctyper_results_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "CRISPR-Cas number (#)", "Total length (bp)",
                "Average length (bp)"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -830,25 +857,28 @@ Directory of result files: results/04.gene_function/*/eggnog-mapper.
 
 &nbsp;
 
-##### 2.4.1.1 GO Database Annotation
+##### 2.4.1.1 GO Database Annotation {.tabset .tabset-dropdown}
 
 The full name of GO is Gene Ontology<sup>[12]</sup>, which is an internationally standardized classification system for gene function description. GO is divided into three main categories: 1) Cellular Component: used to describe subcellular structure, location, and macromolecular complex, such as nucleolus, telomeres, and complexes that recognize initiation; 2) Molecular Function: It is used to describe the function of individual genes and gene products, such as binding with carbohydrates or activity of ATP hydrolase; 3) Biological Process: It is used to describe the biological processes in which the products encoded by genes are involved, such as mitosis or purine metabolism.
 
 Annotation results of three categories of GO database are shown as follows:
 
-<center>**Figure 2-3 Bar plot of GO functional annotation**</center>
-
-<center>
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, results='asis'}
 sample_list <- scan(params$pass_sample_list, character())
-pics <- paste(params$gene_function_dir, sample_list, "GO", paste0(sample_list, "_go.png"), sep="/")
-display(readImage(pics), method="browser")
+for (sample in sample_list) {
+  pic <- file.path(params$gene_function_dir, sample, "GO", paste0(sample, "_go.png"))
+  cat("###### ", sample, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=70%}", "\n")
+  cat("<center>**Figure 2-2 Bar plot of GO functional annotation**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("<center>**Note** x-axis: GO functional categories, y-axis: annotated gene numbers.</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("\n")
+}
 ```
-</center>
 
-<center>**Note** x-axis: GO functional categories, y-axis: annotated gene numbers.</center>
-
-<center>&nbsp;</center>
+##### {- .toc-ignore}
 
 **Result files:**
 
@@ -856,25 +886,28 @@ display(readImage(pics), method="browser")
 
 &nbsp;
 
-##### 2.4.1.2 KEGG Database Annotation
+##### 2.4.1.2 KEGG Database Annotation {.tabset .tabset-dropdown}
 
 KEGG full term Kyoto Encyclopedia of Genes and Genomes<sup>[13]</sup>. A database that systematically analyzes the metabolic pathways of gene products and compounds in cells and the functions of these gene products. It integrates genomic, molecular and biochemical data, including KEGG PATHWAY, KEGG DRUG, KEGG DISEASE, KEGG MODULE, KEGG GENES and genome GENOME) and so on. The KO(KEGG ORTHOLOG) system links various KEGG annotation systems together. KEGG has established a complete KO annotation system for functional annotation of the genome or transcriptome of newly sequenced species. See [http://www.genome.jp/kegg/](http://www.genome.jp/kegg/).
 
 Plot the number of genes with annotation in KEGG database:
 
-<center>**Figure 2-4 Bar plot of KEGG pathway annotation**</center>
-
-<center>
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, results='asis'}
 sample_list <- scan(params$pass_sample_list, character())
-pics <- paste(params$gene_function_dir, sample_list, "KEGG", paste0(sample_list, "_kegg.png"), sep="/")
-display(readImage(pics), method="browser")
+for (sample in sample_list) {
+  pic <- file.path(params$gene_function_dir, sample, "KEGG", paste0(sample, "_kegg.png"))
+  cat("###### ", sample, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=60%}", "\n")
+  cat("<center>**Figure 2-3 Bar plot of KEGG pathway annotation**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("<center>**Note** y-axis: KEGG pathway level1 categories; x-axis: number of genes.</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("\n")
+}
 ```
-</center>
 
-<center>**Note** y-axis: KEGG pathway level1 categories; x-axis: number of genes.</center>
-
-<center>&nbsp;</center>
+##### {- .toc-ignore}
 
 **Result files:**
 
@@ -882,25 +915,28 @@ display(readImage(pics), method="browser")
 
 &nbsp;
 
-##### 2.4.1.3 COG Database Annotation
+##### 2.4.1.3 COG Database Annotation {.tabset .tabset-dropdown}
 
 COG, whose full name is Cluster of Orthologous Groups of proteins<sup>[14]</sup>, is a protein database created and maintained by NCBI and constructed according to the phylogenetic relationship classification of proteins encoding from complete genomes of bacteria, algae, and eukaryotes. By comparison, a protein sequence can be annotated into a COG. Each COG cluster is composed of lineal homologous sequences, so the function of the sequence can be predicted. COG database according to the function can be divided into the total 26 classes, see [https://www.ncbi.nlm.nih.gov/research/cog](https://www.ncbi.nlm.nih.gov/research/cog).
 
 Plot of summary statistics:
 
-<center>**Figure 2-5 Bar plot of COG functional annotation**</center>
-
-<center>
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, results='asis'}
 sample_list <- scan(params$pass_sample_list, character())
-pics <- paste(params$gene_function_dir, sample_list, "COG", paste0(sample_list, "_cog.png"), sep="/")
-display(readImage(pics), method="browser")
+for (sample in sample_list) {
+  pic <- file.path(params$gene_function_dir, sample, "COG", paste0(sample, "_cog.png"))
+  cat("###### ", sample, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=60%}", "\n")
+  cat("<center>**Figure 2-4 Bar plot of COG functional annotation**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("<center>**Note** x-axis: COG functional type; y-axis: number of genes.</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("\n")
+}
 ```
-</center>
 
-<center>**Note** x-axis: COG functional type; y-axis: number of genes.</center>
-
-<center>&nbsp;</center>
+##### {- .toc-ignore}
 
 **Result files:**
 
@@ -908,25 +944,28 @@ display(readImage(pics), method="browser")
 
 &nbsp;
 
-##### 2.4.1.4 NCBI Taxonomy Database Annotation
+##### 2.4.1.4 NCBI Taxonomy Database Annotation {.tabset .tabset-dropdown}
 
 NCBI Taxonomy<sup>[15]</sup> is a planning classification and nominating method for all organisms in the NCBI public sequence database, including the names of all organisms corresponding to nucleotide or protein sequences in the NCBI gene database. See [https://www.ncbi.nlm.nih.gov/taxonomy](https://www.ncbi.nlm.nih.gov/taxonomy).
 
 Plot of summary statitics:
 
-<center>**Figure 2-6 Bar plot of NCBI Taxonomy annotation**</center>
-
-<center>
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, results='asis'}
 sample_list <- scan(params$pass_sample_list, character())
-pics <- paste(params$gene_function_dir, sample_list, "Taxonomy", paste0(sample_list, "_taxonomy.png"), sep="/")
-display(readImage(pics), method="browser")
+for (sample in sample_list) {
+  pic <- file.path(params$gene_function_dir, sample, "Taxonomy", paste0(sample, "_taxonomy.png"))
+  cat("###### ", sample, " \n")
+  cat("\n")
+  cat("![](", pic, "){width=60%}", "\n")
+  cat("<center>**Figure 2-5 Bar plot of NCBI Taxonomy annotation**</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("<center>**Note** x-axis: NCBI Taxonomy species id; y-axis: number of genes.</center>", "\n")
+  cat("<center>&nbsp;</center>", "\n")
+  cat("\n")
+}
 ```
-</center>
 
-<center>**Note** x-axis: NCBI Taxonomy species id; y-axis: number of genes.=</center>
-
-<center>&nbsp;</center>
+##### {- .toc-ignore}
 
 **Result files:**
 
@@ -965,17 +1004,19 @@ datatable(
   sec_pro_tsv_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "SignalP protein (#)", "TMHMM protein (#)",
                "Secreory protein (#)"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -1045,17 +1086,19 @@ datatable(
   mlst_results_df,
   class = "hover cell-border order-column stripe",
   rownames = FALSE,
-  extensions = c("Scroller", "Buttons"),
   colnames = c("Sample ID", "PubMLST scheme", "ST",
                "Allele IDs"),
+  extensions = c("Scroller", "FixedColumns", "Buttons"),
   option = list(
-    #autoWidth = TRUE, #set autoWidth = TRUE when scrollX = TRUE
-    scroller = TRUE,
-    scrollY = "120px",
-    paging = TRUE,
+    scrollX = TRUE,
+    pageLength = 5,
     dom = 'Bfrtip',
     buttons = c('copy', 'excel', 'print'),
-    columnDefs = list(list(className = 'dt-center', targets = "_all"))
+    columnDefs = list(list(className = 'dt-center', targets = "_all")),
+    initComplete = JS(
+        "function(settings, json) {",
+        "$(this.api().table().header()).css({'background-color': '#377EB8', 'color': 'white'});",
+        "}")
   )
 )
 ```
@@ -1073,7 +1116,7 @@ datatable(
 
 ### 2.7 Comparative Genomics Analysis
 
-Comparative genomics analysis of bacterial genomes is a process of studying the evolutionary relationships among different bacterial species or strains. To identify the phylogeny of the bacterial genomes, pan-genome analysis is performed by Roary<sup>[24]</sup>to generate the core genome alignment, which will then be used by BacWGSpipe to construct a maximum-likelihood phylogenetic tree with IQ-TREE<sup>[25]</sup>. The output tree can be viewed and annotated by any tree-viewing software such as ITOL<sup>[26]</sup>. BacWGSpipe automatically generates annotation files of MLST, AMR, and VF in a format supported by ITOL that can be customized by users. 
+Comparative genomics analysis of bacterial genomes is a process of studying the evolutionary relationships among different bacterial species or strains. To identify the phylogeny of the bacterial genomes, pan-genome analysis is performed by Roary<sup>[24]</sup> to generate the core genome alignment, which will then be used by BacWGSpipe to construct a maximum-likelihood phylogenetic tree with IQ-TREE<sup>[25]</sup>. The output tree can be viewed and annotated by any tree-viewing software such as ITOL<sup>[26]</sup>. BacWGSpipe automatically generates annotation files of MLST, AMR, and VF in a format supported by ITOL that can be customized by users. 
 
 **Result files:**
 
@@ -1143,3 +1186,5 @@ Comparative genomics analysis of bacterial genomes is a process of studying the 
 ***
 
 &nbsp;
+
+<div class="tocify-extend-page" data-unique="tocify-extend-page" style="height: 0;"></div>

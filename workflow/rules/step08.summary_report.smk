@@ -70,8 +70,8 @@ if config["seqdata_source"] == 0:
             output:
                 "results/08.summary_report/summary_report.html"
             params:
-                script = config["run_rmd_script_hybrid"],
-                rmd_script = config["report_script_hybrid"],
+                script = "workflow/scripts/run_rmd_hybrid.R",
+                rmd_script = "workflow/scripts/generate_summary_html_hybrid.Rmd",
                 sample_list = config["sample_list"],
                 pass_sample_list = SAMPLE_LIST_UPDATE,
                 long_read_qc_dir = "results/01.data_clean/long_read",
@@ -81,7 +81,7 @@ if config["seqdata_source"] == 0:
             log:
                 "logs/08.summary_report/summary_report.log"
             conda:
-                "../envs/summary_report.yaml"
+                "R"
             shell:
                 # Run a R script to pass parameters to Rmd script
                 """
@@ -153,8 +153,8 @@ elif config["seqdata_source"] == 2:
         output:
             "results/08.summary_report/summary_report.html"
         params:
-            script = config["run_rmd_script_short"],
-            rmd_script = config["report_script_short"],
+            script = "workflow/scripts/run_rmd_short.R",
+            rmd_script = "workflow/scripts/generate_summary_html_short.Rmd",
             sample_list = config["sample_list"],
             pass_sample_list = SAMPLE_LIST_UPDATE,
             genome_component_dir =  "results/03.genome_component",
@@ -162,7 +162,7 @@ elif config["seqdata_source"] == 2:
         log:
             "logs/08.summary_report/summary_report.log"
         conda:
-            "../envs/summary_report.yaml"
+            "R"
         shell:
             # Run a R script to pass parameters to Rmd script
             """
@@ -230,8 +230,8 @@ elif config["seqdata_source"] == 1:
         output:
             "results/08.summary_report/summary_report.html"
         params:
-            script = config["run_rmd_script_long"],
-            rmd_script = config["report_script_long"],
+            script = "workflow/scripts/run_rmd_long.R",
+            rmd_script = "workflow/scripts/generate_summary_html_long.Rmd",
             sample_list = config["sample_list"],
             pass_sample_list = SAMPLE_LIST_UPDATE,
             long_read_qc_dir= "results/01.data_clean/long_read",
@@ -240,7 +240,7 @@ elif config["seqdata_source"] == 1:
         log:
             "logs/08.summary_report/summary_report.log"
         conda:
-            "../envs/summary_report.yaml"
+            "R"
         shell:
             # Run a R script to pass parameters to Rmd script
             """
